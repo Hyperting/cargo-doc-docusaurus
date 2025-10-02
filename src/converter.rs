@@ -1,6 +1,9 @@
+//! Markdown converter for rustdoc JSON data.
+
 use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Visibility};
 
+/// Convert a rustdoc Crate to markdown format.
 pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<String> {
     let mut output = String::new();
 

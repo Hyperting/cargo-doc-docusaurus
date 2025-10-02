@@ -1,7 +1,10 @@
+//! JSON parser for rustdoc output.
+
 use anyhow::{Context, Result};
 use rustdoc_types::Crate;
 use std::path::Path;
 
+/// Load and parse a rustdoc JSON file.
 pub fn load_rustdoc_json(path: &Path) -> Result<Crate> {
     let contents = std::fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;

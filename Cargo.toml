@@ -2,6 +2,15 @@
 name = "rustdoc-to-markdown"
 version = "0.1.0"
 edition = "2024"
+authors = ["Claude (Anthropic AI) <noreply@anthropic.com>"]
+license = "MIT OR Apache-2.0"
+description = "Convert rustdoc JSON output to clean, LLM-friendly markdown documentation"
+readme = "README.md"
+repository = "https://github.com/OWNER/rustdoc-to-markdown"
+homepage = "https://github.com/OWNER/rustdoc-to-markdown"
+keywords = ["rustdoc", "markdown", "documentation", "llm", "ai"]
+categories = ["command-line-utilities", "development-tools"]
+rust-version = "1.85"
 
 [dependencies]
 anyhow = "1.0.100"

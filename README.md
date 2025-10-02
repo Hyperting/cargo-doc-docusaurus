@@ -1,5 +1,7 @@
 # rustdoc-to-markdown
 
+> **🤖 AI-Generated Project**: This tool was created entirely by Claude (Anthropic AI). See [ATTRIBUTION.md](ATTRIBUTION.md) for details.
+
 Convert rustdoc's JSON output to markdown format for LLM consumption and convenient documentation viewing.
 
 ## Motivation
@@ -8,28 +10,61 @@ Rustdoc generates excellent HTML documentation, but for LLM context or text-base
 
 ## Installation
 
+### From crates.io (recommended)
+
 ```bash
+cargo install rustdoc-to-markdown
+```
+
+### From source
+
+```bash
+git clone https://github.com/OWNER/rustdoc-to-markdown
+cd rustdoc-to-markdown
 cargo install --path .
 ```
 
 ## Usage
 
-### Step 1: Generate rustdoc JSON
+### Quick Start
 
 ```bash
-# For a single file
-rustdoc --output-format=json -Z unstable-options src/lib.rs
+# 1. Generate rustdoc JSON (requires nightly Rust)
+cargo +nightly rustdoc -- --output-format=json -Z unstable-options
 
-# For a Cargo project
-cargo rustdoc -- --output-format=json -Z unstable-options
+# 2. Convert to markdown
+rustdoc-to-markdown target/doc/your_crate.json -o docs/
+
+# 3. View the generated markdown
+cat docs/index.md
+```
+
+### Detailed Usage
+
+**Step 1: Generate rustdoc JSON**
+
+```bash
+# For a Cargo project (most common)
+cargo +nightly rustdoc -- --output-format=json -Z unstable-options
+
+# For a single file
+rustdoc +nightly --output-format=json -Z unstable-options src/lib.rs
+
+# For a specific dependency
+cargo +nightly rustdoc -p dependency_name -- --output-format=json -Z unstable-options
 ```
 
 This creates a JSON file at `target/doc/<crate_name>.json`
 
-### Step 2: Convert to Markdown
+**Step 2: Convert to Markdown**
 
 ```bash
 rustdoc-to-markdown target/doc/my_crate.json -o docs/
+
+# With options
+rustdoc-to-markdown target/doc/my_crate.json \
+  --output docs/ \
+  --include-private  # Include private items
 ```
 
 ## Features

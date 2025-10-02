@@ -1,7 +1,10 @@
+//! Markdown file writer.
+
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::Path;
 
+/// Write markdown content to a file in the specified directory.
 pub fn write_markdown(output_dir: &Path, content: &str) -> Result<()> {
     fs::create_dir_all(output_dir)
         .with_context(|| format!("Failed to create output directory: {}", output_dir.display()))?;
