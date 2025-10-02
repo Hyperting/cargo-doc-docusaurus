@@ -1,10 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
+use rustdoc_to_markdown::ConversionOptions;
 use std::path::PathBuf;
-
-mod parser;
-mod converter;
-mod writer;
 
 #[derive(Parser)]
 #[command(name = "rustdoc-to-markdown")]
@@ -23,11 +20,13 @@ struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let crate_data = parser::load_rustdoc_json(&cli.input)?;
+    let options = ConversionOptions {
+        input_path: &cli.input,
+        output_dir: &cli.output,
+        include_private: cli.include_private,
+    };
 
-    let markdown = converter::convert_to_markdown(&crate_data, cli.include_private)?;
-
-    writer::write_markdown(&cli.output, &markdown)?;
+    rustdoc_to_markdown::convert_json_file(&options)?;
 
     println!("✓ Conversion complete! Output written to: {}", cli.output.display());
 
