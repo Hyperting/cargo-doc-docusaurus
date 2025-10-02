@@ -39,6 +39,36 @@ rustdoc-json-to-markdown target/doc/your_crate.json -o docs/
 cat docs/index.md
 ```
 
+### Document Dependencies
+
+**NEW in v0.3.0**: Automatically generate documentation for your project's dependencies!
+
+```bash
+# Document specific dependencies
+rustdoc-json-to-markdown --deps tokio,axum,serde -o docs/
+
+# Document all direct dependencies
+rustdoc-json-to-markdown --all-deps -o docs/
+
+# Dependencies are organized in subdirectories
+# Output structure:
+#   docs/deps/tokio/index.md
+#   docs/deps/axum/index.md
+#   docs/deps/serde/index.md
+```
+
+This is perfect for:
+- 📚 Creating comprehensive documentation for LLM context
+- 🔍 Understanding your dependencies' APIs without leaving your terminal
+- 📝 Generating offline documentation for your entire stack
+- 🎯 Including dependency docs in your project's documentation
+
+The tool automatically:
+- Discovers dependencies from Cargo.toml
+- Generates rustdoc JSON for each dependency
+- Converts to organized markdown
+- Gracefully handles failures (some deps may not build)
+
 ### Detailed Usage
 
 **Step 1: Generate rustdoc JSON**
@@ -69,6 +99,16 @@ rustdoc-json-to-markdown target/doc/my_crate.json \
 
 ## Features
 
+- ✅ **Module organization** (v0.2.0)
+  - Items grouped by module with clear headers
+  - Hierarchical table of contents
+  - Full paths for all items (e.g., `backend::db::Account`)
+  - Eliminates confusion from duplicate names
+- ✅ **Dependency documentation** (v0.3.0)
+  - Document all project dependencies with `--all-deps`
+  - Document specific dependencies with `--deps <names>`
+  - Automatic dependency discovery via cargo metadata
+  - Organized output in `docs/deps/<crate>/` subdirectories
 - ✅ Converts all major rustdoc item types
   - Structs (with field tables and type information)
   - Enums (with variant tables showing kinds: Unit, Tuple, Struct)
@@ -78,13 +118,12 @@ rustdoc-json-to-markdown target/doc/my_crate.json \
   - Modules
 - ✅ Preserves documentation comments (already markdown)
 - ✅ Full type formatting for signatures and fields
-- ✅ Generates table of contents with links
+- ✅ Hierarchical table of contents organized by module
 - ✅ Markdown tables for struct fields and enum variants
 - ✅ Generic parameter support
+- ✅ Trait implementation listings (inherent and user-defined traits)
 - 🚧 Multi-file output (one file per module)
 - 🚧 Cross-reference links between items
-- 🚧 External crate links
-- 🚧 Trait implementation listings
 
 **Legend:** ✅ Implemented | 🚧 Planned
 
@@ -147,15 +186,31 @@ fn add(a: i32, b: i32) -> i32
 ## CLI Options
 
 ```bash
-rustdoc-json-to-markdown <INPUT> [OPTIONS]
+rustdoc-json-to-markdown [INPUT] [OPTIONS]
 
 Arguments:
-  <INPUT>  Path to rustdoc JSON file
+  [INPUT]  Path to rustdoc JSON file (optional if using --deps or --all-deps)
 
 Options:
   -o, --output <OUTPUT>              Output directory for markdown files [default: docs]
       --include-private              Include private items
+      --deps <DEPS>                  Document specific dependencies (comma-separated)
+      --all-deps                     Document all direct dependencies
   -h, --help                         Print help
+  -V, --version                      Print version
+```
+
+**Examples:**
+
+```bash
+# Convert a single JSON file
+rustdoc-json-to-markdown target/doc/my_crate.json -o docs/
+
+# Document specific dependencies
+rustdoc-json-to-markdown --deps tokio,serde -o docs/
+
+# Document all dependencies
+rustdoc-json-to-markdown --all-deps -o docs/
 ```
 
 ## Project Status
