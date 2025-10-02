@@ -8,7 +8,7 @@ use std::process::Command;
 #[command(name = "rustdoc-json-to-markdown")]
 #[command(about = "Convert rustdoc JSON output to markdown format", long_about = None)]
 struct Cli {
-    #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate)")]
+    #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate + deps)")]
     input: Option<PathBuf>,
 
     #[arg(short, long, default_value = "docs", help = "Output directory for markdown files")]
@@ -17,25 +17,18 @@ struct Cli {
     #[arg(long, help = "Include private items")]
     include_private: bool,
 
-    #[arg(long, help = "Document specific dependencies (comma-separated list)", value_delimiter = ',')]
+    #[arg(long, help = "Document only specific dependencies (comma-separated list)", value_delimiter = ',')]
     deps: Vec<String>,
 
-    #[arg(long, help = "Document all direct dependencies")]
+    #[arg(long, help = "Document only all direct dependencies")]
     all_deps: bool,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Dependency documentation mode
-    if cli.all_deps || !cli.deps.is_empty() {
-        document_dependencies(&cli)?;
-        return Ok(());
-    }
-
-    // Single file conversion mode or automatic current crate mode
+    // Explicit input file - just convert that file
     if let Some(input) = cli.input.as_ref() {
-        // Explicit input file provided
         let options = ConversionOptions {
             input_path: input,
             output_dir: &cli.output,
@@ -44,10 +37,21 @@ fn main() -> Result<()> {
 
         rustdoc_json_to_markdown::convert_json_file(&options)?;
         println!("✓ Conversion complete! Output written to: {}", cli.output.display());
-    } else {
-        // No input file - document current crate automatically
-        document_current_crate(&cli)?;
+        return Ok(());
     }
+
+    // Dependency-only mode
+    if cli.all_deps || !cli.deps.is_empty() {
+        document_dependencies(&cli)?;
+        return Ok(());
+    }
+
+    // Default: document current crate + all dependencies (like cargo doc)
+    println!("📚 Documenting current crate and all dependencies...\n");
+
+    document_current_crate(&cli)?;
+    println!();
+    document_all_dependencies(&cli)?;
 
     Ok(())
 }
@@ -123,6 +127,44 @@ fn document_current_crate(cli: &Cli) -> Result<()> {
     rustdoc_json_to_markdown::convert_json_file(&options)?;
 
     println!("✓ Documentation complete! Output written to: {}", cli.output.display());
+
+    Ok(())
+}
+
+fn document_all_dependencies(cli: &Cli) -> Result<()> {
+    let deps_to_document = get_all_dependencies()?;
+
+    if deps_to_document.is_empty() {
+        println!("No dependencies found");
+        return Ok(());
+    }
+
+    println!("📦 Documenting {} dependencies...", deps_to_document.len());
+
+    let mut successful = 0;
+    let mut failed = Vec::new();
+
+    for dep in &deps_to_document {
+        println!("\n🔨 Generating docs for '{}'...", dep.name);
+
+        match document_single_dependency(dep, &cli.output, cli.include_private) {
+            Ok(()) => {
+                successful += 1;
+                println!("  ✓ Successfully documented '{}'", dep.name);
+            }
+            Err(e) => {
+                failed.push(dep.name.clone());
+                println!("  ✗ Failed to document '{}': {}", dep.name, e);
+            }
+        }
+    }
+
+    println!("\n📊 Summary:");
+    println!("  ✓ Successful: {}", successful);
+    if !failed.is_empty() {
+        println!("  ✗ Failed: {} ({})", failed.len(), failed.join(", "));
+    }
+    println!("\n✓ Documentation written to: {}", cli.output.display());
 
     Ok(())
 }

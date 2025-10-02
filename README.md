@@ -12,40 +12,39 @@ cargo install rustdoc-json-to-markdown
 
 ## Usage
 
-### Document Dependencies (Main Use Case)
+### One Command for Everything (like `cargo doc`)
 
 ```bash
-# Document all dependencies
-rustdoc-json-to-markdown --all-deps
-
-# Document specific dependencies
-rustdoc-json-to-markdown --deps tokio,axum,serde
-
-# Custom output directory
-rustdoc-json-to-markdown --all-deps -o docs/
-```
-
-**Output:**
-```
-docs/deps/
-  tokio/index.md
-  axum/index.md
-  serde/index.md
-```
-
-Perfect for:
-- 📚 LLM context with comprehensive API docs
-- 🔍 Understanding dependencies without leaving the terminal
-- 📝 Offline documentation for your entire stack
-
-### Document Your Own Crate
-
-```bash
-# Automatically generates JSON and converts to markdown
+# Document your crate + all dependencies
 rustdoc-json-to-markdown
 
 # Custom output directory
 rustdoc-json-to-markdown -o docs/
+```
+
+**Output:**
+```
+docs/
+  index.md           # Your crate
+  deps/
+    tokio/index.md
+    axum/index.md
+    serde/index.md
+```
+
+Perfect for:
+- 📚 LLM context with comprehensive API docs
+- 🔍 Understanding your entire stack without leaving the terminal
+- 📝 Offline documentation for crate + dependencies
+
+### Document Only Dependencies
+
+```bash
+# All dependencies
+rustdoc-json-to-markdown --all-deps
+
+# Specific dependencies
+rustdoc-json-to-markdown --deps tokio,axum
 ```
 
 ## Features
@@ -63,15 +62,19 @@ rustdoc-json-to-markdown -o docs/
 ```bash
 rustdoc-json-to-markdown [INPUT] [OPTIONS]
 
+# Default (no args): Documents current crate + all dependencies
+# With --all-deps or --deps: Documents only dependencies
+# With INPUT file: Converts that JSON file
+
 Options:
   -o, --output <DIR>        Output directory [default: docs]
-      --all-deps            Document all direct dependencies
-      --deps <CRATES>       Document specific dependencies (comma-separated)
+      --all-deps            Document only all dependencies
+      --deps <CRATES>       Document only specific dependencies
       --include-private     Include private items
   -h, --help               Show help
 ```
 
-**Note:** Requires Rust nightly to generate rustdoc JSON.
+**Note:** Requires Rust nightly.
 
 ## License
 
