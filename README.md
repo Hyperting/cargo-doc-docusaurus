@@ -41,21 +41,22 @@ Perfect for:
 ### Document Your Own Crate
 
 ```bash
-# Generate rustdoc JSON (requires nightly)
-cargo +nightly rustdoc -- --output-format=json -Z unstable-options
+# Automatically generates JSON and converts to markdown
+rustdoc-json-to-markdown
 
-# Convert to markdown
-rustdoc-json-to-markdown target/doc/your_crate.json -o docs/
+# Custom output directory
+rustdoc-json-to-markdown -o docs/
 ```
 
 ## Features
 
-- **Module organization** - Hierarchical structure with full paths (`crate::module::Type`)
+- **One-command workflow** - Automatically generates JSON and converts to markdown
 - **Dependency automation** - Auto-discovers and documents dependencies
+- **Module organization** - Hierarchical structure with full paths (`crate::module::Type`)
 - **Complete type info** - Structs, enums, functions, traits, with full signatures
 - **Clean tables** - Field tables, variant tables, method listings
-- **Smart handling** - Gracefully skips deps that fail to build
 - **Multi-version support** - Handles multiple versions of the same dependency
+- **Smart handling** - Gracefully skips deps that fail to build
 
 ## CLI Reference
 

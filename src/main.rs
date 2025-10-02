@@ -8,7 +8,7 @@ use std::process::Command;
 #[command(name = "rustdoc-json-to-markdown")]
 #[command(about = "Convert rustdoc JSON output to markdown format", long_about = None)]
 struct Cli {
-    #[arg(help = "Path to rustdoc JSON file (optional if using --deps or --all-deps)")]
+    #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate)")]
     input: Option<PathBuf>,
 
     #[arg(short, long, default_value = "docs", help = "Output directory for markdown files")]
@@ -33,19 +33,21 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // Single file conversion mode
-    let input = cli.input.as_ref()
-        .ok_or_else(|| anyhow::anyhow!("Input file required when not using --deps or --all-deps"))?;
+    // Single file conversion mode or automatic current crate mode
+    if let Some(input) = cli.input.as_ref() {
+        // Explicit input file provided
+        let options = ConversionOptions {
+            input_path: input,
+            output_dir: &cli.output,
+            include_private: cli.include_private,
+        };
 
-    let options = ConversionOptions {
-        input_path: input,
-        output_dir: &cli.output,
-        include_private: cli.include_private,
-    };
-
-    rustdoc_json_to_markdown::convert_json_file(&options)?;
-
-    println!("✓ Conversion complete! Output written to: {}", cli.output.display());
+        rustdoc_json_to_markdown::convert_json_file(&options)?;
+        println!("✓ Conversion complete! Output written to: {}", cli.output.display());
+    } else {
+        // No input file - document current crate automatically
+        document_current_crate(&cli)?;
+    }
 
     Ok(())
 }
@@ -53,6 +55,76 @@ fn main() -> Result<()> {
 struct Dependency {
     name: String,
     version: String,
+}
+
+fn document_current_crate(cli: &Cli) -> Result<()> {
+    println!("🔨 Generating rustdoc JSON for current crate...");
+
+    // Run cargo rustdoc to generate JSON
+    let output = Command::new("cargo")
+        .args(&[
+            "+nightly",
+            "rustdoc",
+            "--lib",
+            "--",
+            "--output-format=json",
+            "-Z",
+            "unstable-options",
+        ])
+        .output()
+        .context("Failed to run cargo rustdoc")?;
+
+    if !output.status.success() {
+        bail!("cargo rustdoc failed:\n{}", String::from_utf8_lossy(&output.stderr));
+    }
+
+    // Get the crate name from cargo metadata
+    let metadata_output = Command::new("cargo")
+        .args(&["metadata", "--format-version=1", "--no-deps"])
+        .output()
+        .context("Failed to run cargo metadata")?;
+
+    if !metadata_output.status.success() {
+        bail!("cargo metadata failed: {}", String::from_utf8_lossy(&metadata_output.stderr));
+    }
+
+    let metadata: serde_json::Value = serde_json::from_slice(&metadata_output.stdout)
+        .context("Failed to parse cargo metadata")?;
+
+    let packages = metadata["packages"]
+        .as_array()
+        .context("Missing 'packages' in metadata")?;
+
+    // Get the root package name
+    let root_package = packages.first()
+        .context("No packages found in metadata")?;
+
+    let crate_name = root_package["name"]
+        .as_str()
+        .context("Missing 'name' in package")?;
+
+    // Find the generated JSON file
+    let json_path = PathBuf::from("target/doc").join(format!("{}.json", crate_name.replace("-", "_")));
+
+    if !json_path.exists() {
+        bail!("Generated JSON file not found at {}", json_path.display());
+    }
+
+    println!("✓ JSON generated successfully");
+    println!("🔄 Converting to markdown...");
+
+    // Convert to markdown
+    let options = ConversionOptions {
+        input_path: &json_path,
+        output_dir: &cli.output,
+        include_private: cli.include_private,
+    };
+
+    rustdoc_json_to_markdown::convert_json_file(&options)?;
+
+    println!("✓ Documentation complete! Output written to: {}", cli.output.display());
+
+    Ok(())
 }
 
 fn document_dependencies(cli: &Cli) -> Result<()> {
