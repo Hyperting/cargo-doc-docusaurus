@@ -156,10 +156,14 @@ fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
 
             output.push_str("(");
             let inputs: Vec<String> = f.sig.inputs.iter()
-                .map(|(name, _type)| name.clone())
+                .map(|(name, ty)| format!("{}: {}", name, format_type(ty)))
                 .collect();
             output.push_str(&inputs.join(", "));
             output.push_str(")");
+
+            if let Some(output_type) = &f.sig.output {
+                output.push_str(&format!(" -> {}", format_type(output_type)));
+            }
 
             output.push_str("\n```\n\n");
         }
@@ -228,6 +232,54 @@ fn format_generic_param(param: &rustdoc_types::GenericParamDef) -> String {
         }
         rustdoc_types::GenericParamDefKind::Const { .. } => {
             format!("const {}", param.name)
+        }
+    }
+}
+
+fn format_type(ty: &rustdoc_types::Type) -> String {
+    use rustdoc_types::Type;
+    match ty {
+        Type::ResolvedPath(path) => path.path.clone(),
+        Type::DynTrait(dt) => {
+            if let Some(first) = dt.traits.first() {
+                format!("dyn {}", first.trait_.path)
+            } else {
+                "dyn Trait".to_string()
+            }
+        }
+        Type::Generic(name) => name.clone(),
+        Type::Primitive(name) => name.clone(),
+        Type::FunctionPointer(_) => "fn(...)".to_string(),
+        Type::Tuple(types) => {
+            let formatted: Vec<_> = types.iter().map(format_type).collect();
+            format!("({})", formatted.join(", "))
+        }
+        Type::Slice(inner) => format!("[{}]", format_type(inner)),
+        Type::Array { type_, len } => format!("[{}; {}]", format_type(type_), len),
+        Type::Pat { type_, .. } => format_type(type_),
+        Type::ImplTrait(_bounds) => "impl Trait".to_string(),
+        Type::Infer => "_".to_string(),
+        Type::RawPointer { is_mutable, type_ } => {
+            if *is_mutable {
+                format!("*mut {}", format_type(type_))
+            } else {
+                format!("*const {}", format_type(type_))
+            }
+        }
+        Type::BorrowedRef { lifetime, is_mutable, type_ } => {
+            let lifetime_str = lifetime.as_deref().unwrap_or("'_");
+            if *is_mutable {
+                format!("&{} mut {}", lifetime_str, format_type(type_))
+            } else {
+                format!("&{} {}", lifetime_str, format_type(type_))
+            }
+        }
+        Type::QualifiedPath { name, self_type, trait_, .. } => {
+            if let Some(trait_) = trait_ {
+                format!("<{} as {}>::{}", format_type(self_type), trait_.path, name)
+            } else {
+                format!("{}::{}", format_type(self_type), name)
+            }
         }
     }
 }

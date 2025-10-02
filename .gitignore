@@ -1,6 +1,8 @@
 /target
 /test-crate/target
 /test-output
+/real-world-test
+/anyhow-docs
 *.swp
 *.swo
 *~
