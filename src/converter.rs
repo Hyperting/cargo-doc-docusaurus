@@ -80,14 +80,23 @@ fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
                 rustdoc_types::StructKind::Plain { fields, .. } => {
                     if !fields.is_empty() {
                         output.push_str("**Fields:**\n\n");
+                        output.push_str("| Name | Type | Description |\n");
+                        output.push_str("|------|------|-------------|\n");
                         for field_id in fields {
                             if let Some(field) = crate_data.index.get(field_id) {
                                 if let Some(field_name) = &field.name {
-                                    output.push_str(&format!("- `{}`", field_name));
-                                    if let Some(field_docs) = &field.docs {
-                                        output.push_str(&format!(": {}", field_docs.lines().next().unwrap_or("")));
-                                    }
-                                    output.push_str("\n");
+                                    let field_type = if let ItemEnum::StructField(ty) = &field.inner {
+                                        format_type(ty)
+                                    } else {
+                                        "?".to_string()
+                                    };
+                                    let field_doc = if let Some(docs) = &field.docs {
+                                        docs.lines().next().unwrap_or("").to_string()
+                                    } else {
+                                        "".to_string()
+                                    };
+                                    output.push_str(&format!("| `{}` | `{}` | {} |\n",
+                                        field_name, field_type, field_doc));
                                 }
                             }
                         }
@@ -120,14 +129,41 @@ fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
 
             if !e.variants.is_empty() {
                 output.push_str("**Variants:**\n\n");
+                output.push_str("| Variant | Kind | Description |\n");
+                output.push_str("|---------|------|-------------|\n");
                 for variant_id in &e.variants {
                     if let Some(variant) = crate_data.index.get(variant_id) {
                         if let Some(variant_name) = &variant.name {
-                            output.push_str(&format!("- `{}`", variant_name));
-                            if let Some(variant_docs) = &variant.docs {
-                                output.push_str(&format!(": {}", variant_docs.lines().next().unwrap_or("")));
-                            }
-                            output.push_str("\n");
+                            let variant_kind = if let ItemEnum::Variant(v) = &variant.inner {
+                                match &v.kind {
+                                    rustdoc_types::VariantKind::Plain => "Unit".to_string(),
+                                    rustdoc_types::VariantKind::Tuple(fields) => {
+                                        let types: Vec<_> = fields.iter().map(|field_id| {
+                                            if let Some(id) = field_id {
+                                                if let Some(field_item) = crate_data.index.get(id) {
+                                                    if let ItemEnum::StructField(ty) = &field_item.inner {
+                                                        return format_type(ty);
+                                                    }
+                                                }
+                                            }
+                                            "?".to_string()
+                                        }).collect();
+                                        format!("Tuple({})", types.join(", "))
+                                    },
+                                    rustdoc_types::VariantKind::Struct { fields, .. } => {
+                                        format!("Struct ({} fields)", fields.len())
+                                    }
+                                }
+                            } else {
+                                "?".to_string()
+                            };
+                            let variant_doc = if let Some(docs) = &variant.docs {
+                                docs.lines().next().unwrap_or("").to_string()
+                            } else {
+                                "".to_string()
+                            };
+                            output.push_str(&format!("| `{}` | {} | {} |\n",
+                                variant_name, variant_kind, variant_doc));
                         }
                     }
                 }
