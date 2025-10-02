@@ -6,7 +6,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use rustdoc_to_markdown::{convert_json_file, ConversionOptions};
+//! use rustdoc_json_to_markdown::{convert_json_file, ConversionOptions};
 //! use std::path::Path;
 //!
 //! let options = ConversionOptions {
@@ -52,7 +52,7 @@ pub struct ConversionOptions<'a> {
 /// # Example
 ///
 /// ```no_run
-/// use rustdoc_to_markdown::{convert_json_file, ConversionOptions};
+/// use rustdoc_json_to_markdown::{convert_json_file, ConversionOptions};
 /// use std::path::Path;
 ///
 /// let options = ConversionOptions {

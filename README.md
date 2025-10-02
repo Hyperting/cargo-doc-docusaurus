@@ -1,4 +1,4 @@
-# rustdoc-to-markdown
+# rustdoc-json-to-markdown
 
 > **🤖 AI-Generated Project**: This tool was created entirely by Claude (Anthropic AI). See [ATTRIBUTION.md](ATTRIBUTION.md) for details.
 
@@ -13,14 +13,14 @@ Rustdoc generates excellent HTML documentation, but for LLM context or text-base
 ### From crates.io (recommended)
 
 ```bash
-cargo install rustdoc-to-markdown
+cargo install rustdoc-json-to-markdown
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/OWNER/rustdoc-to-markdown
-cd rustdoc-to-markdown
+git clone https://github.com/Crazytieguy/rustdoc-json-to-markdown
+cd rustdoc-json-to-markdown
 cargo install --path .
 ```
 
@@ -33,7 +33,7 @@ cargo install --path .
 cargo +nightly rustdoc -- --output-format=json -Z unstable-options
 
 # 2. Convert to markdown
-rustdoc-to-markdown target/doc/your_crate.json -o docs/
+rustdoc-json-to-markdown target/doc/your_crate.json -o docs/
 
 # 3. View the generated markdown
 cat docs/index.md
@@ -59,10 +59,10 @@ This creates a JSON file at `target/doc/<crate_name>.json`
 **Step 2: Convert to Markdown**
 
 ```bash
-rustdoc-to-markdown target/doc/my_crate.json -o docs/
+rustdoc-json-to-markdown target/doc/my_crate.json -o docs/
 
 # With options
-rustdoc-to-markdown target/doc/my_crate.json \
+rustdoc-json-to-markdown target/doc/my_crate.json \
   --output docs/ \
   --include-private  # Include private items
 ```
@@ -147,7 +147,7 @@ fn add(a: i32, b: i32) -> i32
 ## CLI Options
 
 ```bash
-rustdoc-to-markdown <INPUT> [OPTIONS]
+rustdoc-json-to-markdown <INPUT> [OPTIONS]
 
 Arguments:
   <INPUT>  Path to rustdoc JSON file
