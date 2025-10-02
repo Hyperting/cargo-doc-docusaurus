@@ -1,7 +1,8 @@
 //! Markdown converter for rustdoc JSON data.
 
 use anyhow::Result;
-use rustdoc_types::{Crate, Item, ItemEnum, Visibility};
+use rustdoc_types::{Crate, Item, ItemEnum, Visibility, Id};
+use std::collections::HashMap;
 
 /// Convert a rustdoc Crate to markdown format.
 pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<String> {
@@ -17,20 +18,40 @@ pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<
         output.push_str(&format!("{}\n\n", docs));
     }
 
+    // Build a map of item_id -> full_path using the paths data
+    let item_paths = build_path_map(crate_data);
+
+    // Group items by module
+    let modules = group_by_module(crate_data, &item_paths, include_private);
+
+    // Generate hierarchical ToC
     output.push_str("## Table of Contents\n\n");
+    output.push_str(&generate_toc(&modules, crate_name));
+    output.push_str("\n\n---\n\n");
 
-    let mut items: Vec<_> = crate_data.index.iter().collect();
-    items.sort_by(|a, b| {
-        let name_a = a.1.name.as_deref().unwrap_or("");
-        let name_b = b.1.name.as_deref().unwrap_or("");
-        name_a.cmp(name_b)
-    });
+    // Generate content organized by module
+    output.push_str(&generate_content(&modules, crate_data, &item_paths));
 
-    let mut toc_entries = Vec::new();
-    let mut content_sections = Vec::new();
+    Ok(output)
+}
 
-    for (id, item) in &items {
-        if *id == &crate_data.root {
+fn build_path_map(crate_data: &Crate) -> HashMap<Id, Vec<String>> {
+    crate_data.paths.iter()
+        .map(|(id, summary)| {
+            (id.clone(), summary.path.clone())
+        })
+        .collect()
+}
+
+fn group_by_module(
+    crate_data: &Crate,
+    item_paths: &HashMap<Id, Vec<String>>,
+    include_private: bool,
+) -> HashMap<String, Vec<(Id, Item)>> {
+    let mut modules: HashMap<String, Vec<(Id, Item)>> = HashMap::new();
+
+    for (id, item) in &crate_data.index {
+        if id == &crate_data.root {
             continue;
         }
 
@@ -38,20 +59,126 @@ pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<
             continue;
         }
 
-        if let Some(section) = format_item(*id, item, crate_data) {
+        // Skip if we can't format this item type
+        if !can_format_item(item) {
+            continue;
+        }
+
+        // Get the module path (all elements except the last one)
+        let module_path = if let Some(path) = item_paths.get(id) {
+            if path.len() > 1 {
+                path[..path.len()-1].join("::")
+            } else {
+                continue; // Skip root-level items without module
+            }
+        } else {
+            continue; // Skip items without path info
+        };
+
+        modules.entry(module_path)
+            .or_insert_with(Vec::new)
+            .push((id.clone(), item.clone()));
+    }
+
+    // Sort items within each module by name
+    for items in modules.values_mut() {
+        items.sort_by(|a, b| {
+            let name_a = a.1.name.as_deref().unwrap_or("");
+            let name_b = b.1.name.as_deref().unwrap_or("");
+            name_a.cmp(name_b)
+        });
+    }
+
+    modules
+}
+
+fn can_format_item(item: &Item) -> bool {
+    matches!(
+        item.inner,
+        ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Function(_) |
+        ItemEnum::Trait(_) | ItemEnum::Module(_) | ItemEnum::Constant { .. } |
+        ItemEnum::TypeAlias(_)
+    )
+}
+
+fn generate_toc(modules: &HashMap<String, Vec<(Id, Item)>>, crate_name: &str) -> String {
+    let mut toc = String::new();
+
+    // Sort modules alphabetically
+    let mut module_names: Vec<_> = modules.keys().collect();
+    module_names.sort();
+
+    for module_name in module_names {
+        let items = &modules[module_name];
+
+        // Get the last component of the module path for display
+        let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+            .unwrap_or(module_name);
+
+        toc.push_str(&format!("- **{}**\n", display_name));
+
+        for (_id, item) in items {
             if let Some(name) = &item.name {
-                let anchor = name.to_lowercase().replace("::", "-");
-                toc_entries.push(format!("- [{}](#{})", name, anchor));
-                content_sections.push(section);
+                let full_path = format!("{}::{}", module_name, name);
+                let anchor = full_path.to_lowercase().replace("::", "-");
+                toc.push_str(&format!("  - [{}](#{})\n", name, anchor));
             }
         }
     }
 
-    output.push_str(&toc_entries.join("\n"));
-    output.push_str("\n\n---\n\n");
-    output.push_str(&content_sections.join("\n\n"));
+    toc
+}
 
-    Ok(output)
+fn generate_content(
+    modules: &HashMap<String, Vec<(Id, Item)>>,
+    crate_data: &Crate,
+    item_paths: &HashMap<Id, Vec<String>>,
+) -> String {
+    let mut output = String::new();
+
+    // Sort modules alphabetically
+    let mut module_names: Vec<_> = modules.keys().collect();
+    module_names.sort();
+
+    for module_name in module_names {
+        let items = &modules[module_name];
+
+        // Module header
+        output.push_str(&format!("# Module: `{}`\n\n", module_name));
+
+        // Generate content for each item in the module
+        for (id, item) in items {
+            if let Some(section) = format_item_with_path(id, item, crate_data, item_paths) {
+                output.push_str(&section);
+                output.push_str("\n\n");
+            }
+        }
+
+        output.push_str("---\n\n");
+    }
+
+    output
+}
+
+fn format_item_with_path(
+    item_id: &Id,
+    item: &Item,
+    crate_data: &Crate,
+    item_paths: &HashMap<Id, Vec<String>>,
+) -> Option<String> {
+    let full_path = item_paths.get(item_id)?;
+    let full_name = full_path.join("::");
+
+    let mut output = format_item(item_id, item, crate_data)?;
+
+    // Replace the simple name header with the full path
+    if let Some(name) = &item.name {
+        let old_header = format!("## {}\n\n", name);
+        let new_header = format!("## {}\n\n", full_name);
+        output = output.replace(&old_header, &new_header);
+    }
+
+    Some(output)
 }
 
 fn is_public(item: &Item) -> bool {
