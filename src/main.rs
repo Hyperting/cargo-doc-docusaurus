@@ -50,12 +50,24 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+struct Dependency {
+    name: String,
+    version: String,
+}
+
 fn document_dependencies(cli: &Cli) -> Result<()> {
     // Get list of dependencies to document
     let deps_to_document = if cli.all_deps {
         get_all_dependencies()?
     } else {
-        cli.deps.clone()
+        // For manually specified deps, we don't have version info
+        // so we'll pass empty version (will attempt without version)
+        cli.deps.iter()
+            .map(|name| Dependency {
+                name: name.clone(),
+                version: String::new()
+            })
+            .collect()
     };
 
     if deps_to_document.is_empty() {
@@ -68,16 +80,16 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
     let mut failed = Vec::new();
 
     for dep in &deps_to_document {
-        println!("\n🔨 Generating docs for '{}'...", dep);
+        println!("\n🔨 Generating docs for '{}'...", dep.name);
 
         match document_single_dependency(dep, &cli.output, cli.include_private) {
             Ok(()) => {
                 successful += 1;
-                println!("  ✓ Successfully documented '{}'", dep);
+                println!("  ✓ Successfully documented '{}'", dep.name);
             }
             Err(e) => {
-                failed.push(dep.clone());
-                println!("  ✗ Failed to document '{}': {}", dep, e);
+                failed.push(dep.name.clone());
+                println!("  ✗ Failed to document '{}': {}", dep.name, e);
             }
         }
     }
@@ -92,7 +104,7 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
     Ok(())
 }
 
-fn get_all_dependencies() -> Result<Vec<String>> {
+fn get_all_dependencies() -> Result<Vec<Dependency>> {
     // Use cargo metadata to get all direct dependencies
     let output = Command::new("cargo")
         .args(&["metadata", "--format-version=1"])
@@ -132,50 +144,63 @@ fn get_all_dependencies() -> Result<Vec<String>> {
         .filter_map(|v| v.as_str().map(String::from))
         .collect();
 
-    // Map package IDs to package names
-    let mut dep_names = Vec::new();
+    // Map package IDs to package names and versions
+    let mut deps = Vec::new();
     for dep_id in dep_ids {
         if let Some(pkg) = packages.iter().find(|p| p["id"].as_str() == Some(&dep_id)) {
-            if let Some(name) = pkg["name"].as_str() {
-                dep_names.push(name.to_string());
+            if let (Some(name), Some(version)) = (pkg["name"].as_str(), pkg["version"].as_str()) {
+                deps.push(Dependency {
+                    name: name.to_string(),
+                    version: version.to_string(),
+                });
             }
         }
     }
 
-    dep_names.sort();
-    Ok(dep_names)
+    deps.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(deps)
 }
 
-fn document_single_dependency(dep_name: &str, output_base: &PathBuf, include_private: bool) -> Result<()> {
+fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_private: bool) -> Result<()> {
+    // Build the package specification
+    // If we have a version, use name@version to disambiguate multiple versions
+    let package_spec = if dep.version.is_empty() {
+        dep.name.clone()
+    } else {
+        format!("{}@{}", dep.name, dep.version)
+    };
+
     // Generate rustdoc JSON for the dependency
-    let status = Command::new("cargo")
+    // Suppress stderr to hide panics and verbose cargo output
+    let output = Command::new("cargo")
         .args(&[
             "+nightly",
             "rustdoc",
             "-p",
-            dep_name,
+            &package_spec,
             "--lib",
             "--",
             "--output-format=json",
             "-Z",
             "unstable-options",
         ])
-        .status()
+        .stderr(std::process::Stdio::null())  // Suppress stderr (hides panics)
+        .output()
         .context("Failed to run cargo rustdoc")?;
 
-    if !status.success() {
-        bail!("cargo rustdoc failed for '{}'", dep_name);
+    if !output.status.success() {
+        bail!("cargo rustdoc failed (exit code: {})", output.status);
     }
 
     // Find the generated JSON file
-    let json_path = PathBuf::from("target/doc").join(format!("{}.json", dep_name.replace("-", "_")));
+    let json_path = PathBuf::from("target/doc").join(format!("{}.json", dep.name.replace("-", "_")));
 
     if !json_path.exists() {
         bail!("Generated JSON file not found at {}", json_path.display());
     }
 
     // Convert to markdown in a subdirectory
-    let output_dir = output_base.join("deps").join(dep_name);
+    let output_dir = output_base.join("deps").join(&dep.name);
 
     let options = ConversionOptions {
         input_path: &json_path,
