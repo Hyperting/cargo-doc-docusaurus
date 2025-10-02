@@ -3,6 +3,7 @@
 /test-output
 /real-world-test
 /anyhow-docs
+/serde-json-docs
 *.swp
 *.swo
 *~

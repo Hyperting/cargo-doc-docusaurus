@@ -35,7 +35,7 @@ pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<
             continue;
         }
 
-        if let Some(section) = format_item(item, crate_data) {
+        if let Some(section) = format_item(*id, item, crate_data) {
             if let Some(name) = &item.name {
                 let anchor = name.to_lowercase().replace("::", "-");
                 toc_entries.push(format!("- [{}](#{})", name, anchor));
@@ -55,7 +55,7 @@ fn is_public(item: &Item) -> bool {
     matches!(item.visibility, Visibility::Public)
 }
 
-fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
+fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> Option<String> {
     let name = item.name.as_ref()?;
     let mut output = String::new();
 
@@ -108,6 +108,40 @@ fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
                 }
                 rustdoc_types::StructKind::Unit => {
                     output.push_str("**Unit Struct**\n\n");
+                }
+            }
+
+            let (inherent_impls, trait_impls) = collect_impls_for_type(item_id, crate_data);
+
+            if !inherent_impls.is_empty() {
+                output.push_str("**Methods:**\n\n");
+                for impl_block in inherent_impls {
+                    output.push_str(&format_impl_methods(impl_block, crate_data));
+                }
+                output.push_str("\n");
+            }
+
+            if !trait_impls.is_empty() {
+                let user_impls: Vec<_> = trait_impls.iter()
+                    .filter(|impl_block| {
+                        !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
+                    })
+                    .collect();
+
+                if !user_impls.is_empty() {
+                    output.push_str("**Trait Implementations:**\n\n");
+                    for impl_block in user_impls {
+                        if let Some(trait_ref) = &impl_block.trait_ {
+                            output.push_str(&format!("- **{}**\n", trait_ref.path));
+                            let methods = format_impl_methods(impl_block, crate_data);
+                            if !methods.is_empty() {
+                                for line in methods.lines() {
+                                    output.push_str(&format!("  {}\n", line));
+                                }
+                            }
+                        }
+                    }
+                    output.push_str("\n");
                 }
             }
         }
@@ -168,6 +202,40 @@ fn format_item(item: &Item, crate_data: &Crate) -> Option<String> {
                     }
                 }
                 output.push_str("\n");
+            }
+
+            let (inherent_impls, trait_impls) = collect_impls_for_type(item_id, crate_data);
+
+            if !inherent_impls.is_empty() {
+                output.push_str("**Methods:**\n\n");
+                for impl_block in inherent_impls {
+                    output.push_str(&format_impl_methods(impl_block, crate_data));
+                }
+                output.push_str("\n");
+            }
+
+            if !trait_impls.is_empty() {
+                let user_impls: Vec<_> = trait_impls.iter()
+                    .filter(|impl_block| {
+                        !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
+                    })
+                    .collect();
+
+                if !user_impls.is_empty() {
+                    output.push_str("**Trait Implementations:**\n\n");
+                    for impl_block in user_impls {
+                        if let Some(trait_ref) = &impl_block.trait_ {
+                            output.push_str(&format!("- **{}**\n", trait_ref.path));
+                            let methods = format_impl_methods(impl_block, crate_data);
+                            if !methods.is_empty() {
+                                for line in methods.lines() {
+                                    output.push_str(&format!("  {}\n", line));
+                                }
+                            }
+                        }
+                    }
+                    output.push_str("\n");
+                }
             }
         }
         ItemEnum::Function(f) => {
@@ -270,6 +338,80 @@ fn format_generic_param(param: &rustdoc_types::GenericParamDef) -> String {
             format!("const {}", param.name)
         }
     }
+}
+
+fn collect_impls_for_type<'a>(type_id: &rustdoc_types::Id, crate_data: &'a Crate) -> (Vec<&'a rustdoc_types::Impl>, Vec<&'a rustdoc_types::Impl>) {
+    use rustdoc_types::Type;
+
+    let mut inherent_impls = Vec::new();
+    let mut trait_impls = Vec::new();
+
+    for (_id, item) in &crate_data.index {
+        if let ItemEnum::Impl(impl_block) = &item.inner {
+            let matches = match &impl_block.for_ {
+                Type::ResolvedPath(path) => path.id == *type_id,
+                _ => false,
+            };
+
+            if matches {
+                if impl_block.trait_.is_some() {
+                    trait_impls.push(impl_block);
+                } else {
+                    inherent_impls.push(impl_block);
+                }
+            }
+        }
+    }
+
+    (inherent_impls, trait_impls)
+}
+
+fn format_impl_methods(impl_block: &rustdoc_types::Impl, crate_data: &Crate) -> String {
+    let mut output = String::new();
+
+    for method_id in &impl_block.items {
+        if let Some(method) = crate_data.index.get(method_id) {
+            if let ItemEnum::Function(f) = &method.inner {
+                if let Some(method_name) = &method.name {
+                    let sig = format_function_signature(method_name, f);
+                    let doc = if let Some(docs) = &method.docs {
+                        docs.lines().next().unwrap_or("")
+                    } else {
+                        ""
+                    };
+                    output.push_str(&format!("- `{}` - {}\n", sig, doc));
+                }
+            }
+        }
+    }
+
+    output
+}
+
+fn format_function_signature(name: &str, f: &rustdoc_types::Function) -> String {
+    let mut sig = format!("fn {}", name);
+
+    if !f.generics.params.is_empty() {
+        sig.push('<');
+        let params: Vec<String> = f.generics.params.iter()
+            .map(format_generic_param)
+            .collect();
+        sig.push_str(&params.join(", "));
+        sig.push('>');
+    }
+
+    sig.push('(');
+    let inputs: Vec<String> = f.sig.inputs.iter()
+        .map(|(name, ty)| format!("{}: {}", name, format_type(ty)))
+        .collect();
+    sig.push_str(&inputs.join(", "));
+    sig.push(')');
+
+    if let Some(output_type) = &f.sig.output {
+        sig.push_str(&format!(" -> {}", format_type(output_type)));
+    }
+
+    sig
 }
 
 fn format_type(ty: &rustdoc_types::Type) -> String {
