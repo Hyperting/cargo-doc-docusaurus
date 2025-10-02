@@ -34,12 +34,20 @@ rustdoc-to-markdown target/doc/my_crate.json -o docs/
 
 ## Features
 
-- ✅ Converts all rustdoc item types (structs, enums, functions, traits, etc.)
+- ✅ Converts all major rustdoc item types
+  - Structs (with field tables and type information)
+  - Enums (with variant tables showing kinds: Unit, Tuple, Struct)
+  - Functions (with complete type signatures)
+  - Traits (with method listings)
+  - Type aliases and constants
+  - Modules
 - ✅ Preserves documentation comments (already markdown)
-- ✅ Formats type signatures as code blocks
-- ✅ Generates table of contents
-- ✅ Cross-references between items
+- ✅ Full type formatting for signatures and fields
+- ✅ Generates table of contents with links
+- ✅ Markdown tables for struct fields and enum variants
+- ✅ Generic parameter support
 - 🚧 Multi-file output (one file per module)
+- 🚧 Cross-reference links between items
 - 🚧 External crate links
 - 🚧 Trait implementation listings
 
@@ -47,31 +55,84 @@ rustdoc-to-markdown target/doc/my_crate.json -o docs/
 
 ## Example Output
 
+The tool generates clean, structured markdown with:
+
+**Table of Contents:**
 ```markdown
-# my_crate
+## Table of Contents
 
-## Module: utils
+- [Point](#point)
+- [Color](#color)
+- [add](#add)
+```
 
-### Function: add
+**Struct with Field Table:**
+```markdown
+## Point
 
-\`\`\`rust
-pub fn add(a: i32, b: i32) -> i32
-\`\`\`
+**Type:** Struct
+
+Represents a 2D point in space.
+
+**Fields:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `x` | `i32` | The x coordinate |
+| `y` | `i32` | The y coordinate |
+```
+
+**Enum with Variant Table:**
+```markdown
+## Color
+
+**Type:** Enum
+
+**Variants:**
+
+| Variant | Kind | Description |
+|---------|------|-------------|
+| `Red` | Unit | Red color |
+| `Rgb` | Tuple(u8, u8, u8) | Custom RGB color |
+```
+
+**Function with Type Signatures:**
+```markdown
+## add
+
+**Type:** Function
 
 Adds two numbers together.
 
-**Parameters:**
-- `a` - First number
-- `b` - Second number
+\`\`\`rust
+fn add(a: i32, b: i32) -> i32
+\`\`\`
+```
 
-**Returns:** The sum of `a` and `b`
+## CLI Options
+
+```bash
+rustdoc-to-markdown <INPUT> [OPTIONS]
+
+Arguments:
+  <INPUT>  Path to rustdoc JSON file
+
+Options:
+  -o, --output <OUTPUT>              Output directory for markdown files [default: docs]
+      --include-private              Include private items
+  -h, --help                         Print help
 ```
 
 ## Project Status
 
-**Early Development** - This project is under active development. The rustdoc JSON format itself is unstable and requires nightly Rust.
+**Phase 1 Complete (MVP)** - The core functionality is implemented and tested with real-world crates:
+- Successfully tested with anyhow, serde_json, and custom crates
+- Generates well-formatted markdown with complete type information
+- Produces structured documentation suitable for LLM consumption and viewing
 
-See [PLAN.md](PLAN.md) for implementation details and roadmap.
+**Note:** The rustdoc JSON format itself is unstable and requires nightly Rust.
+
+See [PLAN.md](PLAN.md) for implementation details and Phase 2 roadmap.
 
 ## Requirements
 
@@ -80,10 +141,10 @@ See [PLAN.md](PLAN.md) for implementation details and roadmap.
 
 ## Dependencies
 
-- `rustdoc-json-types` - Vendored from rust-lang/rust (unstable)
+- `rustdoc-types` v0.56 - Type definitions for rustdoc JSON (from crates.io)
 - `serde_json` - JSON parsing
 - `anyhow` - Error handling
-- `clap` - CLI interface
+- `clap` - CLI interface with derive macros
 
 ## Contributing
 
