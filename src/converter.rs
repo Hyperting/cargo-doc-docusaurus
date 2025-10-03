@@ -257,9 +257,19 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 output.push_str(&format!("{}\n\n", docs));
             }
 
-            if !s.generics.params.is_empty() {
+            let non_synthetic_params: Vec<_> = s
+                .generics
+                .params
+                .iter()
+                .filter(|p| {
+                    !matches!(&p.kind, rustdoc_types::GenericParamDefKind::Lifetime { .. })
+                        || !is_synthetic_lifetime(&p.name)
+                })
+                .collect();
+
+            if !non_synthetic_params.is_empty() {
                 output.push_str("**Generic Parameters:**\n");
-                for param in &s.generics.params {
+                for param in non_synthetic_params {
                     output.push_str(&format!("- {}\n", format_generic_param(param)));
                 }
                 output.push('\n');
@@ -281,9 +291,14 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                                         "?".to_string()
                                     };
                                     let field_doc = if let Some(docs) = &field.docs {
-                                        docs.lines().next().unwrap_or("").to_string()
+                                        let first_line = docs.lines().next().unwrap_or("").trim();
+                                        if first_line.is_empty() {
+                                            "-".to_string()
+                                        } else {
+                                            first_line.to_string()
+                                        }
                                     } else {
-                                        "".to_string()
+                                        "-".to_string()
                                     };
                                     output.push_str(&format!(
                                         "| `{}` | `{}` | {} |\n",
@@ -340,7 +355,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                     }
 
                     if !derives.is_empty() {
-                        output.push_str("**Derived Traits:** ");
+                        output.push_str("**Implemented Traits:** ");
                         output.push_str(&derives.join(", "));
                         output.push_str("\n\n");
                     }
@@ -366,9 +381,19 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 output.push_str(&format!("{}\n\n", docs));
             }
 
-            if !e.generics.params.is_empty() {
+            let non_synthetic_params: Vec<_> = e
+                .generics
+                .params
+                .iter()
+                .filter(|p| {
+                    !matches!(&p.kind, rustdoc_types::GenericParamDefKind::Lifetime { .. })
+                        || !is_synthetic_lifetime(&p.name)
+                })
+                .collect();
+
+            if !non_synthetic_params.is_empty() {
                 output.push_str("**Generic Parameters:**\n");
-                for param in &e.generics.params {
+                for param in non_synthetic_params {
                     output.push_str(&format!("- {}\n", format_generic_param(param)));
                 }
                 output.push('\n');
@@ -412,9 +437,14 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                                 "?".to_string()
                             };
                             let variant_doc = if let Some(docs) = &variant.docs {
-                                docs.lines().next().unwrap_or("").to_string()
+                                let first_line = docs.lines().next().unwrap_or("").trim();
+                                if first_line.is_empty() {
+                                    "-".to_string()
+                                } else {
+                                    first_line.to_string()
+                                }
                             } else {
-                                "".to_string()
+                                "-".to_string()
                             };
                             output.push_str(&format!(
                                 "| `{}` | {} | {} |\n",
@@ -460,7 +490,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                     }
 
                     if !derives.is_empty() {
-                        output.push_str("**Derived Traits:** ");
+                        output.push_str("**Implemented Traits:** ");
                         output.push_str(&derives.join(", "));
                         output.push_str("\n\n");
                     }
@@ -574,13 +604,22 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
 fn format_generic_param(param: &rustdoc_types::GenericParamDef) -> String {
     match &param.kind {
         rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
-            format!("'{}", param.name)
+            // Lifetime names already include the ' prefix in rustdoc JSON
+            param.name.clone()
         }
         rustdoc_types::GenericParamDefKind::Type { .. } => param.name.clone(),
         rustdoc_types::GenericParamDefKind::Const { .. } => {
             format!("const {}", param.name)
         }
     }
+}
+
+fn is_synthetic_lifetime(name: &str) -> bool {
+    // Filter compiler-generated synthetic lifetimes
+    name == "'_"
+        || name.starts_with("'_") && name[2..].chars().all(|c| c.is_ascii_digit())
+        || name.starts_with("'life") && name[5..].chars().all(|c| c.is_ascii_digit())
+        || name == "'async_trait"
 }
 
 fn collect_impls_for_type<'a>(
@@ -637,10 +676,20 @@ fn format_impl_methods(impl_block: &rustdoc_types::Impl, crate_data: &Crate) -> 
 fn format_function_signature(name: &str, f: &rustdoc_types::Function) -> String {
     let mut sig = format!("fn {}", name);
 
-    if !f.generics.params.is_empty() {
+    let non_synthetic_params: Vec<String> = f
+        .generics
+        .params
+        .iter()
+        .filter(|p| {
+            !matches!(&p.kind, rustdoc_types::GenericParamDefKind::Lifetime { .. })
+                || !is_synthetic_lifetime(&p.name)
+        })
+        .map(format_generic_param)
+        .collect();
+
+    if !non_synthetic_params.is_empty() {
         sig.push('<');
-        let params: Vec<String> = f.generics.params.iter().map(format_generic_param).collect();
-        sig.push_str(&params.join(", "));
+        sig.push_str(&non_synthetic_params.join(", "));
         sig.push('>');
     }
 
