@@ -1,16 +1,19 @@
 use anyhow::{Context, Result, bail};
+use cargo_doc_md::ConversionOptions;
 use clap::Parser;
-use rustdoc_json_to_markdown::ConversionOptions;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Parser)]
-#[command(name = "rustdoc-json-to-markdown")]
+#[command(name = "cargo-doc-md")]
 #[command(
     about = "Generate markdown documentation for Rust crates and dependencies",
-    long_about = "Generate markdown documentation for Rust crates and their dependencies.\n\n\
+    long_about = "Cargo subcommand to generate markdown documentation for Rust crates and their dependencies.\n\n\
                   Default behavior: Documents current crate + all dependencies with multi-file output.\n\
-                  Creates a master index and organizes modules into separate files for easy navigation."
+                  Creates a master index and organizes modules into separate files for easy navigation.\n\n\
+                  Usage:\n  \
+                  cargo doc-md              # Document current crate + all dependencies\n  \
+                  cargo doc-md --all-deps   # Document only dependencies"
 )]
 struct Cli {
     #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate + all deps)")]
@@ -35,12 +38,22 @@ struct Cli {
     )]
     deps: Vec<String>,
 
-    #[arg(long, help = "Document only all direct dependencies (excludes current crate)")]
+    #[arg(
+        long,
+        help = "Document only all direct dependencies (excludes current crate)"
+    )]
     all_deps: bool,
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    // When invoked as `cargo doc-md`, cargo passes an extra "doc-md" argument
+    // Skip it if present to support both `cargo doc-md` and `cargo-doc-md` invocations
+    let args = std::env::args()
+        .enumerate()
+        .filter(|(i, arg)| !(*i == 1 && arg == "doc-md"))
+        .map(|(_, arg)| arg);
+
+    let cli = Cli::parse_from(args);
 
     // Explicit input file - just convert that file
     if let Some(input) = cli.input.as_ref() {
@@ -50,8 +63,11 @@ fn main() -> Result<()> {
             include_private: cli.include_private,
         };
 
-        rustdoc_json_to_markdown::convert_json_file(&options)?;
-        println!("✓ Conversion complete! Output written to: {}", cli.output.display());
+        cargo_doc_md::convert_json_file(&options)?;
+        println!(
+            "✓ Conversion complete! Output written to: {}",
+            cli.output.display()
+        );
         return Ok(());
     }
 
@@ -97,7 +113,10 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         .context("Failed to run cargo rustdoc")?;
 
     if !output.status.success() {
-        bail!("cargo rustdoc failed:\n{}", String::from_utf8_lossy(&output.stderr));
+        bail!(
+            "cargo rustdoc failed:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     // Get the crate name from cargo metadata
@@ -107,7 +126,10 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         .context("Failed to run cargo metadata")?;
 
     if !metadata_output.status.success() {
-        bail!("cargo metadata failed: {}", String::from_utf8_lossy(&metadata_output.stderr));
+        bail!(
+            "cargo metadata failed: {}",
+            String::from_utf8_lossy(&metadata_output.stderr)
+        );
     }
 
     let metadata: serde_json::Value = serde_json::from_slice(&metadata_output.stdout)
@@ -118,8 +140,7 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         .context("Missing 'packages' in metadata")?;
 
     // Get the root package name
-    let root_package = packages.first()
-        .context("No packages found in metadata")?;
+    let root_package = packages.first().context("No packages found in metadata")?;
 
     let crate_name = root_package["name"]
         .as_str()
@@ -127,7 +148,8 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         .to_string();
 
     // Find the generated JSON file
-    let json_path = PathBuf::from("target/doc").join(format!("{}.json", crate_name.replace("-", "_")));
+    let json_path =
+        PathBuf::from("target/doc").join(format!("{}.json", crate_name.replace("-", "_")));
 
     if !json_path.exists() {
         bail!("Generated JSON file not found at {}", json_path.display());
@@ -143,9 +165,13 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         include_private: cli.include_private,
     };
 
-    rustdoc_json_to_markdown::convert_json_file(&options)?;
+    cargo_doc_md::convert_json_file(&options)?;
 
-    println!("✓ Documentation complete! Output written to: {}/{}", cli.output.display(), crate_name);
+    println!(
+        "✓ Documentation complete! Output written to: {}/{}",
+        cli.output.display(),
+        crate_name
+    );
 
     Ok(Some(crate_name))
 }
@@ -183,7 +209,10 @@ fn document_all_dependencies(cli: &Cli) -> Result<Vec<String>> {
     if !failed.is_empty() {
         println!("  ✗ Failed: {} ({})", failed.len(), failed.join(", "));
     }
-    println!("\n✓ Documentation written to: {}/deps", cli.output.display());
+    println!(
+        "\n✓ Documentation written to: {}/deps",
+        cli.output.display()
+    );
 
     Ok(successful)
 }
@@ -195,10 +224,11 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
     } else {
         // For manually specified deps, we don't have version info
         // so we'll pass empty version (will attempt without version)
-        cli.deps.iter()
+        cli.deps
+            .iter()
             .map(|name| Dependency {
                 name: name.clone(),
-                version: String::new()
+                version: String::new(),
             })
             .collect()
     };
@@ -245,11 +275,14 @@ fn get_all_dependencies() -> Result<Vec<Dependency>> {
         .context("Failed to run 'cargo metadata'")?;
 
     if !output.status.success() {
-        bail!("cargo metadata failed: {}", String::from_utf8_lossy(&output.stderr));
+        bail!(
+            "cargo metadata failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
-    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout)
-        .context("Failed to parse cargo metadata")?;
+    let metadata: serde_json::Value =
+        serde_json::from_slice(&output.stdout).context("Failed to parse cargo metadata")?;
 
     let packages = metadata["packages"]
         .as_array()
@@ -266,7 +299,8 @@ fn get_all_dependencies() -> Result<Vec<Dependency>> {
         .as_array()
         .context("Missing 'nodes' in resolve")?;
 
-    let root_node = nodes.iter()
+    let root_node = nodes
+        .iter()
         .find(|n| n["id"].as_str() == Some(root))
         .context("Root package not found in nodes")?;
 
@@ -294,7 +328,11 @@ fn get_all_dependencies() -> Result<Vec<Dependency>> {
     Ok(deps)
 }
 
-fn document_single_dependency(dep: &Dependency, output_base: &Path, include_private: bool) -> Result<()> {
+fn document_single_dependency(
+    dep: &Dependency,
+    output_base: &Path,
+    include_private: bool,
+) -> Result<()> {
     // Build the package specification
     // If we have a version, use name@version to disambiguate multiple versions
     let package_spec = if dep.version.is_empty() {
@@ -317,7 +355,7 @@ fn document_single_dependency(dep: &Dependency, output_base: &Path, include_priv
             "-Z",
             "unstable-options",
         ])
-        .stderr(std::process::Stdio::null())  // Suppress stderr (hides panics)
+        .stderr(std::process::Stdio::null()) // Suppress stderr (hides panics)
         .output()
         .context("Failed to run cargo rustdoc")?;
 
@@ -326,7 +364,8 @@ fn document_single_dependency(dep: &Dependency, output_base: &Path, include_priv
     }
 
     // Find the generated JSON file
-    let json_path = PathBuf::from("target/doc").join(format!("{}.json", dep.name.replace("-", "_")));
+    let json_path =
+        PathBuf::from("target/doc").join(format!("{}.json", dep.name.replace("-", "_")));
 
     if !json_path.exists() {
         bail!("Generated JSON file not found at {}", json_path.display());
@@ -342,7 +381,7 @@ fn document_single_dependency(dep: &Dependency, output_base: &Path, include_priv
         include_private,
     };
 
-    rustdoc_json_to_markdown::convert_json_file(&options)?;
+    cargo_doc_md::convert_json_file(&options)?;
 
     Ok(())
 }
@@ -362,7 +401,11 @@ fn generate_master_index(
     // Current crate section
     if let Some(crate_name) = current_crate {
         content.push_str("## Current Crate\n\n");
-        content.push_str(&format!("- [`{}`]({}index.md)\n\n", crate_name, crate_name.to_string() + "/"));
+        content.push_str(&format!(
+            "- [`{}`]({}index.md)\n\n",
+            crate_name,
+            crate_name.to_string() + "/"
+        ));
     }
 
     // Dependencies section
@@ -377,7 +420,9 @@ fn generate_master_index(
     }
 
     content.push_str("---\n\n");
-    content.push_str("Generated with [rustdoc-json-to-markdown](https://github.com/Crazytieguy/rustdoc-json-to-markdown)\n");
+    content.push_str(
+        "Generated with [cargo-doc-md](https://github.com/Crazytieguy/rustdoc-json-to-markdown)\n",
+    );
 
     let index_path = output_dir.join("index.md");
     fs::write(&index_path, content)

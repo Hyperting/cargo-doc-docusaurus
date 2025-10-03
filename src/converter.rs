@@ -1,7 +1,7 @@
 //! Markdown converter for rustdoc JSON data.
 
 use anyhow::Result;
-use rustdoc_types::{Crate, Item, ItemEnum, Visibility, Id};
+use rustdoc_types::{Crate, Id, Item, ItemEnum, Visibility};
 use std::collections::HashMap;
 
 /// Represents the multi-file markdown output
@@ -13,8 +13,13 @@ pub struct MarkdownOutput {
 }
 
 /// Convert a rustdoc Crate to multi-file markdown format.
-pub fn convert_to_markdown_multifile(crate_data: &Crate, include_private: bool) -> Result<MarkdownOutput> {
-    let root_item = crate_data.index.get(&crate_data.root)
+pub fn convert_to_markdown_multifile(
+    crate_data: &Crate,
+    include_private: bool,
+) -> Result<MarkdownOutput> {
+    let root_item = crate_data
+        .index
+        .get(&crate_data.root)
         .ok_or_else(|| anyhow::anyhow!("Root item not found in index"))?;
 
     let crate_name = root_item.name.as_deref().unwrap_or("unknown");
@@ -39,7 +44,8 @@ pub fn convert_to_markdown_multifile(crate_data: &Crate, include_private: bool) 
             .replace("::", "/");
 
         let file_path = format!("{}.md", module_filename);
-        let module_content = generate_module_file(module_name, items, crate_data, &item_paths, crate_name);
+        let module_content =
+            generate_module_file(module_name, items, crate_data, &item_paths, crate_name);
         files.insert(file_path, module_content);
     }
 
@@ -53,7 +59,9 @@ pub fn convert_to_markdown_multifile(crate_data: &Crate, include_private: bool) 
 pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<String> {
     let mut output = String::new();
 
-    let root_item = crate_data.index.get(&crate_data.root)
+    let root_item = crate_data
+        .index
+        .get(&crate_data.root)
         .ok_or_else(|| anyhow::anyhow!("Root item not found in index"))?;
 
     let crate_name = root_item.name.as_deref().unwrap_or("unknown");
@@ -81,10 +89,10 @@ pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<
 }
 
 fn build_path_map(crate_data: &Crate) -> HashMap<Id, Vec<String>> {
-    crate_data.paths.iter()
-        .map(|(id, summary)| {
-            (*id, summary.path.clone())
-        })
+    crate_data
+        .paths
+        .iter()
+        .map(|(id, summary)| (*id, summary.path.clone()))
         .collect()
 }
 
@@ -112,7 +120,7 @@ fn group_by_module(
         // Get the module path (all elements except the last one)
         let module_path = if let Some(path) = item_paths.get(id) {
             if path.len() > 1 {
-                path[..path.len()-1].join("::")
+                path[..path.len() - 1].join("::")
             } else {
                 continue; // Skip root-level items without module
             }
@@ -120,7 +128,8 @@ fn group_by_module(
             continue; // Skip items without path info
         };
 
-        modules.entry(module_path)
+        modules
+            .entry(module_path)
             .or_default()
             .push((*id, item.clone()));
     }
@@ -140,9 +149,13 @@ fn group_by_module(
 fn can_format_item(item: &Item) -> bool {
     matches!(
         item.inner,
-        ItemEnum::Struct(_) | ItemEnum::Enum(_) | ItemEnum::Function(_) |
-        ItemEnum::Trait(_) | ItemEnum::Module(_) | ItemEnum::Constant { .. } |
-        ItemEnum::TypeAlias(_)
+        ItemEnum::Struct(_)
+            | ItemEnum::Enum(_)
+            | ItemEnum::Function(_)
+            | ItemEnum::Trait(_)
+            | ItemEnum::Module(_)
+            | ItemEnum::Constant { .. }
+            | ItemEnum::TypeAlias(_)
     )
 }
 
@@ -157,7 +170,8 @@ fn generate_toc(modules: &HashMap<String, Vec<(Id, Item)>>, crate_name: &str) ->
         let items = &modules[module_name];
 
         // Get the last component of the module path for display
-        let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+        let display_name = module_name
+            .strip_prefix(&format!("{}::", crate_name))
             .unwrap_or(module_name);
 
         toc.push_str(&format!("- **{}**\n", display_name));
@@ -260,7 +274,8 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                         for field_id in fields {
                             if let Some(field) = crate_data.index.get(field_id) {
                                 if let Some(field_name) = &field.name {
-                                    let field_type = if let ItemEnum::StructField(ty) = &field.inner {
+                                    let field_type = if let ItemEnum::StructField(ty) = &field.inner
+                                    {
                                         format_type(ty)
                                     } else {
                                         "?".to_string()
@@ -270,8 +285,10 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                                     } else {
                                         "".to_string()
                                     };
-                                    output.push_str(&format!("| `{}` | `{}` | {} |\n",
-                                        field_name, field_type, field_doc));
+                                    output.push_str(&format!(
+                                        "| `{}` | `{}` | {} |\n",
+                                        field_name, field_type, field_doc
+                                    ));
                                 }
                             }
                         }
@@ -279,7 +296,10 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                     }
                 }
                 rustdoc_types::StructKind::Tuple(fields) => {
-                    output.push_str(&format!("**Tuple Struct** with {} field(s)\n\n", fields.len()));
+                    output.push_str(&format!(
+                        "**Tuple Struct** with {} field(s)\n\n",
+                        fields.len()
+                    ));
                 }
                 rustdoc_types::StructKind::Unit => {
                     output.push_str("**Unit Struct**\n\n");
@@ -297,7 +317,8 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
             }
 
             if !trait_impls.is_empty() {
-                let user_impls: Vec<_> = trait_impls.iter()
+                let user_impls: Vec<_> = trait_impls
+                    .iter()
                     .filter(|impl_block| {
                         !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
                     })
@@ -347,18 +368,25 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                                 match &v.kind {
                                     rustdoc_types::VariantKind::Plain => "Unit".to_string(),
                                     rustdoc_types::VariantKind::Tuple(fields) => {
-                                        let types: Vec<_> = fields.iter().map(|field_id| {
-                                            if let Some(id) = field_id {
-                                                if let Some(field_item) = crate_data.index.get(id) {
-                                                    if let ItemEnum::StructField(ty) = &field_item.inner {
-                                                        return format_type(ty);
+                                        let types: Vec<_> = fields
+                                            .iter()
+                                            .map(|field_id| {
+                                                if let Some(id) = field_id {
+                                                    if let Some(field_item) =
+                                                        crate_data.index.get(id)
+                                                    {
+                                                        if let ItemEnum::StructField(ty) =
+                                                            &field_item.inner
+                                                        {
+                                                            return format_type(ty);
+                                                        }
                                                     }
                                                 }
-                                            }
-                                            "?".to_string()
-                                        }).collect();
+                                                "?".to_string()
+                                            })
+                                            .collect();
                                         format!("Tuple({})", types.join(", "))
-                                    },
+                                    }
                                     rustdoc_types::VariantKind::Struct { fields, .. } => {
                                         format!("Struct ({} fields)", fields.len())
                                     }
@@ -371,8 +399,10 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                             } else {
                                 "".to_string()
                             };
-                            output.push_str(&format!("| `{}` | {} | {} |\n",
-                                variant_name, variant_kind, variant_doc));
+                            output.push_str(&format!(
+                                "| `{}` | {} | {} |\n",
+                                variant_name, variant_kind, variant_doc
+                            ));
                         }
                     }
                 }
@@ -390,7 +420,8 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
             }
 
             if !trait_impls.is_empty() {
-                let user_impls: Vec<_> = trait_impls.iter()
+                let user_impls: Vec<_> = trait_impls
+                    .iter()
                     .filter(|impl_block| {
                         !impl_block.is_synthetic && impl_block.blanket_impl.is_none()
                     })
@@ -426,15 +457,17 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
 
             if !f.generics.params.is_empty() {
                 output.push('<');
-                let params: Vec<String> = f.generics.params.iter()
-                    .map(format_generic_param)
-                    .collect();
+                let params: Vec<String> =
+                    f.generics.params.iter().map(format_generic_param).collect();
                 output.push_str(&params.join(", "));
                 output.push('>');
             }
 
             output.push('(');
-            let inputs: Vec<String> = f.sig.inputs.iter()
+            let inputs: Vec<String> = f
+                .sig
+                .inputs
+                .iter()
                 .map(|(name, ty)| format!("{}: {}", name, format_type(ty)))
                 .collect();
             output.push_str(&inputs.join(", "));
@@ -461,7 +494,10 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                         if let Some(method_name) = &method.name {
                             output.push_str(&format!("- `{}`", method_name));
                             if let Some(method_docs) = &method.docs {
-                                output.push_str(&format!(": {}", method_docs.lines().next().unwrap_or("")));
+                                output.push_str(&format!(
+                                    ": {}",
+                                    method_docs.lines().next().unwrap_or("")
+                                ));
                             }
                             output.push('\n');
                         }
@@ -506,16 +542,17 @@ fn format_generic_param(param: &rustdoc_types::GenericParamDef) -> String {
         rustdoc_types::GenericParamDefKind::Lifetime { .. } => {
             format!("'{}", param.name)
         }
-        rustdoc_types::GenericParamDefKind::Type { .. } => {
-            param.name.clone()
-        }
+        rustdoc_types::GenericParamDefKind::Type { .. } => param.name.clone(),
         rustdoc_types::GenericParamDefKind::Const { .. } => {
             format!("const {}", param.name)
         }
     }
 }
 
-fn collect_impls_for_type<'a>(type_id: &rustdoc_types::Id, crate_data: &'a Crate) -> (Vec<&'a rustdoc_types::Impl>, Vec<&'a rustdoc_types::Impl>) {
+fn collect_impls_for_type<'a>(
+    type_id: &rustdoc_types::Id,
+    crate_data: &'a Crate,
+) -> (Vec<&'a rustdoc_types::Impl>, Vec<&'a rustdoc_types::Impl>) {
     use rustdoc_types::Type;
 
     let mut inherent_impls = Vec::new();
@@ -568,15 +605,16 @@ fn format_function_signature(name: &str, f: &rustdoc_types::Function) -> String 
 
     if !f.generics.params.is_empty() {
         sig.push('<');
-        let params: Vec<String> = f.generics.params.iter()
-            .map(format_generic_param)
-            .collect();
+        let params: Vec<String> = f.generics.params.iter().map(format_generic_param).collect();
         sig.push_str(&params.join(", "));
         sig.push('>');
     }
 
     sig.push('(');
-    let inputs: Vec<String> = f.sig.inputs.iter()
+    let inputs: Vec<String> = f
+        .sig
+        .inputs
+        .iter()
         .map(|(name, ty)| format!("{}: {}", name, format_type(ty)))
         .collect();
     sig.push_str(&inputs.join(", "));
@@ -619,7 +657,11 @@ fn format_type(ty: &rustdoc_types::Type) -> String {
                 format!("*const {}", format_type(type_))
             }
         }
-        Type::BorrowedRef { lifetime, is_mutable, type_ } => {
+        Type::BorrowedRef {
+            lifetime,
+            is_mutable,
+            type_,
+        } => {
             let lifetime_str = lifetime.as_deref().unwrap_or("'_");
             if *is_mutable {
                 format!("&{} mut {}", lifetime_str, format_type(type_))
@@ -627,7 +669,12 @@ fn format_type(ty: &rustdoc_types::Type) -> String {
                 format!("&{} {}", lifetime_str, format_type(type_))
             }
         }
-        Type::QualifiedPath { name, self_type, trait_, .. } => {
+        Type::QualifiedPath {
+            name,
+            self_type,
+            trait_,
+            ..
+        } => {
             if let Some(trait_) = trait_ {
                 format!("<{} as {}>::{}", format_type(self_type), trait_.path, name)
             } else {
@@ -659,7 +706,8 @@ fn generate_crate_index(
     for module_name in module_names {
         let items = &modules[module_name];
 
-        let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+        let display_name = module_name
+            .strip_prefix(&format!("{}::", crate_name))
             .unwrap_or(module_name);
 
         let module_file = format!("{}.md", display_name.replace("::", "/"));
@@ -683,7 +731,8 @@ fn generate_crate_index(
         output.push_str(&format!("### [`{}`]({})\n\n", display_name, module_file));
 
         if !counts.is_empty() {
-            let summary: Vec<String> = counts.iter()
+            let summary: Vec<String> = counts
+                .iter()
                 .map(|(name, count)| format!("{} {}", count, name))
                 .collect();
             output.push_str(&format!("*{}*\n\n", summary.join(", ")));
@@ -702,7 +751,8 @@ fn generate_module_file(
 ) -> String {
     let mut output = String::new();
 
-    let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+    let display_name = module_name
+        .strip_prefix(&format!("{}::", crate_name))
         .unwrap_or(module_name);
 
     // Breadcrumb
@@ -729,7 +779,15 @@ fn generate_module_file(
         by_type.entry(type_name).or_default().push(item);
     }
 
-    let type_order = ["Modules", "Structs", "Enums", "Functions", "Traits", "Constants", "Type Aliases"];
+    let type_order = [
+        "Modules",
+        "Structs",
+        "Enums",
+        "Functions",
+        "Traits",
+        "Constants",
+        "Type Aliases",
+    ];
     for type_name in &type_order {
         if let Some(items_of_type) = by_type.get(type_name) {
             output.push_str(&format!("**{}**\n\n", type_name));

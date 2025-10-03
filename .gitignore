@@ -1,10 +1,8 @@
 /target
-/test-crate/target
-/test-output
-/real-world-test
-/anyhow-docs
-/serde-json-docs
 *.swp
 *.swo
 *~
-md-output/
+
+test-*/
+*-docs/
+*-output/

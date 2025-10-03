@@ -6,7 +6,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use rustdoc_json_to_markdown::{convert_json_file, ConversionOptions};
+//! use cargo_doc_md::{convert_json_file, ConversionOptions};
 //! use std::path::Path;
 //!
 //! let options = ConversionOptions {
@@ -18,8 +18,8 @@
 //! convert_json_file(&options).expect("Conversion failed");
 //! ```
 
-pub mod parser;
 pub mod converter;
+pub mod parser;
 pub mod writer;
 
 pub use rustdoc_types;
@@ -52,7 +52,7 @@ pub struct ConversionOptions<'a> {
 /// # Example
 ///
 /// ```no_run
-/// use rustdoc_json_to_markdown::{convert_json_file, ConversionOptions};
+/// use cargo_doc_md::{convert_json_file, ConversionOptions};
 /// use std::path::Path;
 ///
 /// let options = ConversionOptions {
@@ -72,7 +72,6 @@ pub fn convert_json_file(options: &ConversionOptions) -> Result<()> {
     writer::write_markdown_multifile(&crate_output_dir, &output)?;
     Ok(())
 }
-
 
 /// Convert rustdoc JSON data (already loaded) to markdown.
 ///

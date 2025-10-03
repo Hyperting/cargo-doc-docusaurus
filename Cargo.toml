@@ -1,16 +1,20 @@
 [package]
-name = "rustdoc-json-to-markdown"
-version = "0.6.1"
+name = "cargo-doc-md"
+version = "0.7.0"
 edition = "2024"
 authors = ["Claude (Anthropic AI) <noreply@anthropic.com>"]
 license = "MIT OR Apache-2.0"
-description = "Convert rustdoc JSON output to clean, LLM-friendly markdown documentation"
+description = "Cargo subcommand to generate markdown documentation for Rust crates and dependencies"
 readme = "README.md"
 repository = "https://github.com/Crazytieguy/rustdoc-json-to-markdown"
 homepage = "https://github.com/Crazytieguy/rustdoc-json-to-markdown"
-keywords = ["rustdoc", "markdown", "documentation", "llm", "ai"]
+keywords = ["cargo-subcommand", "markdown", "documentation", "rustdoc", "cargo"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.85"
+
+[[bin]]
+name = "cargo-doc-md"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"
