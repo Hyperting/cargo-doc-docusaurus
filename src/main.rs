@@ -421,7 +421,7 @@ fn generate_master_index(
 
     content.push_str("---\n\n");
     content.push_str(
-        "Generated with [cargo-doc-md](https://github.com/Crazytieguy/rustdoc-json-to-markdown)\n",
+        "Generated with [cargo-doc-md](https://github.com/Crazytieguy/cargo-doc-md)\n",
     );
 
     let index_path = output_dir.join("index.md");
