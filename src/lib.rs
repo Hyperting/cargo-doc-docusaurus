@@ -73,13 +73,6 @@ pub fn convert_json_file(options: &ConversionOptions) -> Result<()> {
     Ok(())
 }
 
-/// Convert a rustdoc JSON file to markdown (legacy single-file output).
-pub fn convert_json_file_single(options: &ConversionOptions) -> Result<()> {
-    let crate_data = parser::load_rustdoc_json(options.input_path)?;
-    let markdown = converter::convert_to_markdown(&crate_data, options.include_private)?;
-    writer::write_markdown(options.output_dir, &markdown)?;
-    Ok(())
-}
 
 /// Convert rustdoc JSON data (already loaded) to markdown.
 ///

@@ -83,7 +83,7 @@ pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<
 fn build_path_map(crate_data: &Crate) -> HashMap<Id, Vec<String>> {
     crate_data.paths.iter()
         .map(|(id, summary)| {
-            (id.clone(), summary.path.clone())
+            (*id, summary.path.clone())
         })
         .collect()
 }
@@ -121,8 +121,8 @@ fn group_by_module(
         };
 
         modules.entry(module_path)
-            .or_insert_with(Vec::new)
-            .push((id.clone(), item.clone()));
+            .or_default()
+            .push((*id, item.clone()));
     }
 
     // Sort items within each module by name
@@ -248,7 +248,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 for param in &s.generics.params {
                     output.push_str(&format!("- {}\n", format_generic_param(param)));
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
 
             match &s.kind {
@@ -275,7 +275,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                                 }
                             }
                         }
-                        output.push_str("\n");
+                        output.push('\n');
                     }
                 }
                 rustdoc_types::StructKind::Tuple(fields) => {
@@ -293,7 +293,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 for impl_block in inherent_impls {
                     output.push_str(&format_impl_methods(impl_block, crate_data));
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
 
             if !trait_impls.is_empty() {
@@ -316,7 +316,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                             }
                         }
                     }
-                    output.push_str("\n");
+                    output.push('\n');
                 }
             }
         }
@@ -333,7 +333,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 for param in &e.generics.params {
                     output.push_str(&format!("- {}\n", format_generic_param(param)));
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
 
             if !e.variants.is_empty() {
@@ -376,7 +376,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                         }
                     }
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
 
             let (inherent_impls, trait_impls) = collect_impls_for_type(item_id, crate_data);
@@ -386,7 +386,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                 for impl_block in inherent_impls {
                     output.push_str(&format_impl_methods(impl_block, crate_data));
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
 
             if !trait_impls.is_empty() {
@@ -409,7 +409,7 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                             }
                         }
                     }
-                    output.push_str("\n");
+                    output.push('\n');
                 }
             }
         }
@@ -425,20 +425,20 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
             output.push_str(&format!("fn {}", name));
 
             if !f.generics.params.is_empty() {
-                output.push_str("<");
+                output.push('<');
                 let params: Vec<String> = f.generics.params.iter()
                     .map(format_generic_param)
                     .collect();
                 output.push_str(&params.join(", "));
-                output.push_str(">");
+                output.push('>');
             }
 
-            output.push_str("(");
+            output.push('(');
             let inputs: Vec<String> = f.sig.inputs.iter()
                 .map(|(name, ty)| format!("{}: {}", name, format_type(ty)))
                 .collect();
             output.push_str(&inputs.join(", "));
-            output.push_str(")");
+            output.push(')');
 
             if let Some(output_type) = &f.sig.output {
                 output.push_str(&format!(" -> {}", format_type(output_type)));
@@ -463,11 +463,11 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                             if let Some(method_docs) = &method.docs {
                                 output.push_str(&format!(": {}", method_docs.lines().next().unwrap_or("")));
                             }
-                            output.push_str("\n");
+                            output.push('\n');
                         }
                     }
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
         }
         ItemEnum::Module(_) => {
@@ -521,7 +521,7 @@ fn collect_impls_for_type<'a>(type_id: &rustdoc_types::Id, crate_data: &'a Crate
     let mut inherent_impls = Vec::new();
     let mut trait_impls = Vec::new();
 
-    for (_id, item) in &crate_data.index {
+    for item in crate_data.index.values() {
         if let ItemEnum::Impl(impl_block) = &item.inner {
             let matches = match &impl_block.for_ {
                 Type::ResolvedPath(path) => path.id == *type_id,
@@ -706,8 +706,8 @@ fn generate_module_file(
         .unwrap_or(module_name);
 
     // Breadcrumb
-    let breadcrumb = format!("`{}`", module_name.replace("::", " > "));
-    output.push_str(&format!("{}\n\n", breadcrumb));
+    let breadcrumb = module_name.replace("::", " > ");
+    output.push_str(&format!("**{}**\n\n", breadcrumb));
 
     output.push_str(&format!("# Module: {}\n\n", display_name));
 
@@ -726,7 +726,7 @@ fn generate_module_file(
             ItemEnum::Module(_) => "Modules",
             _ => continue,
         };
-        by_type.entry(type_name).or_insert_with(Vec::new).push(&item);
+        by_type.entry(type_name).or_default().push(item);
     }
 
     let type_order = ["Modules", "Structs", "Enums", "Functions", "Traits", "Constants", "Type Aliases"];
@@ -744,10 +744,10 @@ fn generate_module_file(
                             }
                         }
                     }
-                    output.push_str("\n");
+                    output.push('\n');
                 }
             }
-            output.push_str("\n");
+            output.push('\n');
         }
     }
 

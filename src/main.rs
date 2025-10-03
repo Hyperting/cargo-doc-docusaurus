@@ -1,26 +1,41 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use rustdoc_json_to_markdown::ConversionOptions;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Parser)]
 #[command(name = "rustdoc-json-to-markdown")]
-#[command(about = "Convert rustdoc JSON output to markdown format", long_about = None)]
+#[command(
+    about = "Generate markdown documentation for Rust crates and dependencies",
+    long_about = "Generate markdown documentation for Rust crates and their dependencies.\n\n\
+                  Default behavior: Documents current crate + all dependencies with multi-file output.\n\
+                  Creates a master index and organizes modules into separate files for easy navigation."
+)]
 struct Cli {
-    #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate + deps)")]
+    #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate + all deps)")]
     input: Option<PathBuf>,
 
-    #[arg(short, long, default_value = "docs", help = "Output directory for markdown files")]
+    #[arg(
+        short,
+        long,
+        default_value = "docs",
+        help = "Output directory [default: docs]\n\
+                Creates: docs/index.md (master index), docs/crate_name/*.md (modules)"
+    )]
     output: PathBuf,
 
-    #[arg(long, help = "Include private items")]
+    #[arg(long, help = "Include private items in documentation")]
     include_private: bool,
 
-    #[arg(long, help = "Document only specific dependencies (comma-separated list)", value_delimiter = ',')]
+    #[arg(
+        long,
+        help = "Document only specific dependencies (comma-separated)",
+        value_delimiter = ','
+    )]
     deps: Vec<String>,
 
-    #[arg(long, help = "Document only all direct dependencies")]
+    #[arg(long, help = "Document only all direct dependencies (excludes current crate)")]
     all_deps: bool,
 }
 
@@ -69,7 +84,7 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
 
     // Run cargo rustdoc to generate JSON
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "+nightly",
             "rustdoc",
             "--lib",
@@ -87,7 +102,7 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
 
     // Get the crate name from cargo metadata
     let metadata_output = Command::new("cargo")
-        .args(&["metadata", "--format-version=1", "--no-deps"])
+        .args(["metadata", "--format-version=1", "--no-deps"])
         .output()
         .context("Failed to run cargo metadata")?;
 
@@ -225,7 +240,7 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
 fn get_all_dependencies() -> Result<Vec<Dependency>> {
     // Use cargo metadata to get all direct dependencies
     let output = Command::new("cargo")
-        .args(&["metadata", "--format-version=1"])
+        .args(["metadata", "--format-version=1"])
         .output()
         .context("Failed to run 'cargo metadata'")?;
 
@@ -279,7 +294,7 @@ fn get_all_dependencies() -> Result<Vec<Dependency>> {
     Ok(deps)
 }
 
-fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_private: bool) -> Result<()> {
+fn document_single_dependency(dep: &Dependency, output_base: &Path, include_private: bool) -> Result<()> {
     // Build the package specification
     // If we have a version, use name@version to disambiguate multiple versions
     let package_spec = if dep.version.is_empty() {
@@ -291,7 +306,7 @@ fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_p
     // Generate rustdoc JSON for the dependency
     // Suppress stderr to hide panics and verbose cargo output
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "+nightly",
             "rustdoc",
             "-p",
@@ -333,7 +348,7 @@ fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_p
 }
 
 fn generate_master_index(
-    output_dir: &PathBuf,
+    output_dir: &Path,
     current_crate: Option<&str>,
     dependencies: &[String],
 ) -> Result<()> {
@@ -358,7 +373,7 @@ fn generate_master_index(
             let dep_path = format!("deps/{}/index.md", dep);
             content.push_str(&format!("- [`{}`]({})\n", dep, dep_path));
         }
-        content.push_str("\n");
+        content.push('\n');
     }
 
     content.push_str("---\n\n");

@@ -22,20 +22,32 @@ rustdoc-json-to-markdown
 rustdoc-json-to-markdown -o docs/
 ```
 
-**Output:**
+**Output Structure:**
 ```
 docs/
-  index.md           # Your crate
+  index.md                    # Master index of all crates
+  your_crate/
+    index.md                  # Crate overview + module list
+    module1.md                # Each module in its own file
+    module2.md
+    sub/
+      nested_module.md        # Nested modules create subdirectories
   deps/
-    tokio/index.md
-    axum/index.md
-    serde/index.md
+    tokio/
+      index.md                # Tokio overview
+      io.md                   # Each tokio module
+      net.md
+      sync.md
+    axum/
+      index.md
+      ...
 ```
 
 Perfect for:
 - 📚 LLM context with comprehensive API docs
 - 🔍 Understanding your entire stack without leaving the terminal
 - 📝 Offline documentation for crate + dependencies
+- 🧭 Easy navigation with multi-file output (no more 14k-line files!)
 
 ### Document Only Dependencies
 
@@ -49,11 +61,21 @@ rustdoc-json-to-markdown --deps tokio,axum
 
 ## Features
 
-- **One-command workflow** - Automatically generates JSON and converts to markdown
-- **Dependency automation** - Auto-discovers and documents dependencies
-- **Module organization** - Hierarchical structure with full paths (`crate::module::Type`)
-- **Complete type info** - Structs, enums, functions, traits, with full signatures
+**Navigation & Organization:**
+- **Master index** - Single entry point listing all documented crates
+- **Multi-file output** - One file per module (no more giant files!)
+- **Breadcrumb navigation** - Know where you are: `backend > db > models`
+- **Module summaries** - See counts at a glance: *27 structs, 2 enums, 1 type alias*
+- **Organized contents** - Items grouped by type (Structs, Enums, Functions, etc.)
+
+**Documentation Quality:**
+- **Complete type info** - Full signatures for structs, enums, functions, traits
 - **Clean tables** - Field tables, variant tables, method listings
+- **Module organization** - Hierarchical structure with full paths (`crate::module::Type`)
+
+**Automation:**
+- **One-command workflow** - Automatically generates JSON and converts to markdown
+- **Dependency discovery** - Auto-discovers and documents all dependencies
 - **Multi-version support** - Handles multiple versions of the same dependency
 - **Smart handling** - Gracefully skips deps that fail to build
 
