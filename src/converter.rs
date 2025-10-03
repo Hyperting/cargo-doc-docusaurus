@@ -4,7 +4,52 @@ use anyhow::Result;
 use rustdoc_types::{Crate, Item, ItemEnum, Visibility, Id};
 use std::collections::HashMap;
 
-/// Convert a rustdoc Crate to markdown format.
+/// Represents the multi-file markdown output
+pub struct MarkdownOutput {
+    /// Crate name
+    pub crate_name: String,
+    /// Map of relative file path -> content
+    pub files: HashMap<String, String>,
+}
+
+/// Convert a rustdoc Crate to multi-file markdown format.
+pub fn convert_to_markdown_multifile(crate_data: &Crate, include_private: bool) -> Result<MarkdownOutput> {
+    let root_item = crate_data.index.get(&crate_data.root)
+        .ok_or_else(|| anyhow::anyhow!("Root item not found in index"))?;
+
+    let crate_name = root_item.name.as_deref().unwrap_or("unknown");
+
+    // Build a map of item_id -> full_path using the paths data
+    let item_paths = build_path_map(crate_data);
+
+    // Group items by module
+    let modules = group_by_module(crate_data, &item_paths, include_private);
+
+    let mut files = HashMap::new();
+
+    // Generate index.md with crate overview and module list
+    let index_content = generate_crate_index(crate_name, root_item, &modules);
+    files.insert("index.md".to_string(), index_content);
+
+    // Generate one file per module
+    for (module_name, items) in &modules {
+        let module_filename = module_name
+            .strip_prefix(&format!("{}::", crate_name))
+            .unwrap_or(module_name)
+            .replace("::", "/");
+
+        let file_path = format!("{}.md", module_filename);
+        let module_content = generate_module_file(module_name, items, crate_data, &item_paths, crate_name);
+        files.insert(file_path, module_content);
+    }
+
+    Ok(MarkdownOutput {
+        crate_name: crate_name.to_string(),
+        files,
+    })
+}
+
+/// Convert a rustdoc Crate to markdown format (legacy single-file).
 pub fn convert_to_markdown(crate_data: &Crate, include_private: bool) -> Result<String> {
     let mut output = String::new();
 
@@ -590,4 +635,131 @@ fn format_type(ty: &rustdoc_types::Type) -> String {
             }
         }
     }
+}
+
+fn generate_crate_index(
+    crate_name: &str,
+    root_item: &Item,
+    modules: &HashMap<String, Vec<(Id, Item)>>,
+) -> String {
+    let mut output = String::new();
+
+    output.push_str(&format!("# {}\n\n", crate_name));
+
+    if let Some(docs) = &root_item.docs {
+        output.push_str(&format!("{}\n\n", docs));
+    }
+
+    // Module listing with summary
+    output.push_str("## Modules\n\n");
+
+    let mut module_names: Vec<_> = modules.keys().collect();
+    module_names.sort();
+
+    for module_name in module_names {
+        let items = &modules[module_name];
+
+        let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+            .unwrap_or(module_name);
+
+        let module_file = format!("{}.md", display_name.replace("::", "/"));
+
+        // Count item types
+        let mut counts = HashMap::new();
+        for (_id, item) in items {
+            let type_name = match &item.inner {
+                ItemEnum::Struct(_) => "structs",
+                ItemEnum::Enum(_) => "enums",
+                ItemEnum::Function(_) => "functions",
+                ItemEnum::Trait(_) => "traits",
+                ItemEnum::Constant { .. } => "constants",
+                ItemEnum::TypeAlias(_) => "type aliases",
+                ItemEnum::Module(_) => "modules",
+                _ => continue,
+            };
+            *counts.entry(type_name).or_insert(0) += 1;
+        }
+
+        output.push_str(&format!("### [`{}`]({})\n\n", display_name, module_file));
+
+        if !counts.is_empty() {
+            let summary: Vec<String> = counts.iter()
+                .map(|(name, count)| format!("{} {}", count, name))
+                .collect();
+            output.push_str(&format!("*{}*\n\n", summary.join(", ")));
+        }
+    }
+
+    output
+}
+
+fn generate_module_file(
+    module_name: &str,
+    items: &[(Id, Item)],
+    crate_data: &Crate,
+    item_paths: &HashMap<Id, Vec<String>>,
+    crate_name: &str,
+) -> String {
+    let mut output = String::new();
+
+    let display_name = module_name.strip_prefix(&format!("{}::", crate_name))
+        .unwrap_or(module_name);
+
+    // Breadcrumb
+    let breadcrumb = format!("`{}`", module_name.replace("::", " > "));
+    output.push_str(&format!("{}\n\n", breadcrumb));
+
+    output.push_str(&format!("# Module: {}\n\n", display_name));
+
+    // Table of contents for this module
+    output.push_str("## Contents\n\n");
+
+    let mut by_type: HashMap<&str, Vec<&Item>> = HashMap::new();
+    for (_id, item) in items {
+        let type_name = match &item.inner {
+            ItemEnum::Struct(_) => "Structs",
+            ItemEnum::Enum(_) => "Enums",
+            ItemEnum::Function(_) => "Functions",
+            ItemEnum::Trait(_) => "Traits",
+            ItemEnum::Constant { .. } => "Constants",
+            ItemEnum::TypeAlias(_) => "Type Aliases",
+            ItemEnum::Module(_) => "Modules",
+            _ => continue,
+        };
+        by_type.entry(type_name).or_insert_with(Vec::new).push(&item);
+    }
+
+    let type_order = ["Modules", "Structs", "Enums", "Functions", "Traits", "Constants", "Type Aliases"];
+    for type_name in &type_order {
+        if let Some(items_of_type) = by_type.get(type_name) {
+            output.push_str(&format!("**{}**\n\n", type_name));
+            for item in items_of_type {
+                if let Some(name) = &item.name {
+                    let anchor = name.to_lowercase();
+                    output.push_str(&format!("- [`{}`](#{})", name, anchor));
+                    if let Some(docs) = &item.docs {
+                        if let Some(first_line) = docs.lines().next() {
+                            if !first_line.is_empty() {
+                                output.push_str(&format!(" - {}", first_line));
+                            }
+                        }
+                    }
+                    output.push_str("\n");
+                }
+            }
+            output.push_str("\n");
+        }
+    }
+
+    output.push_str("---\n\n");
+
+    // Generate content for each item
+    for (id, item) in items {
+        if let Some(section) = format_item_with_path(id, item, crate_data, item_paths) {
+            output.push_str(&section);
+            output.push_str("\n\n");
+        }
+    }
+
+    output
 }

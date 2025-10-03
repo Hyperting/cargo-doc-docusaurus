@@ -37,9 +37,9 @@ pub struct ConversionOptions<'a> {
     pub include_private: bool,
 }
 
-/// Convert a rustdoc JSON file to markdown.
+/// Convert a rustdoc JSON file to markdown (multi-file output).
 ///
-/// This is the main entry point for library usage.
+/// This is the main entry point for library usage. Generates one file per module.
 ///
 /// # Arguments
 ///
@@ -64,6 +64,17 @@ pub struct ConversionOptions<'a> {
 /// convert_json_file(&options).expect("Conversion failed");
 /// ```
 pub fn convert_json_file(options: &ConversionOptions) -> Result<()> {
+    let crate_data = parser::load_rustdoc_json(options.input_path)?;
+    let output = converter::convert_to_markdown_multifile(&crate_data, options.include_private)?;
+
+    // Write to crate-specific subdirectory
+    let crate_output_dir = options.output_dir.join(&output.crate_name);
+    writer::write_markdown_multifile(&crate_output_dir, &output)?;
+    Ok(())
+}
+
+/// Convert a rustdoc JSON file to markdown (legacy single-file output).
+pub fn convert_json_file_single(options: &ConversionOptions) -> Result<()> {
     let crate_data = parser::load_rustdoc_json(options.input_path)?;
     let markdown = converter::convert_to_markdown(&crate_data, options.include_private)?;
     writer::write_markdown(options.output_dir, &markdown)?;

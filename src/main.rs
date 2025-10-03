@@ -49,9 +49,12 @@ fn main() -> Result<()> {
     // Default: document current crate + all dependencies (like cargo doc)
     println!("📚 Documenting current crate and all dependencies...\n");
 
-    document_current_crate(&cli)?;
+    let current_crate = document_current_crate(&cli)?;
     println!();
-    document_all_dependencies(&cli)?;
+    let documented_deps = document_all_dependencies(&cli)?;
+
+    // Generate master index
+    generate_master_index(&cli.output, current_crate.as_deref(), &documented_deps)?;
 
     Ok(())
 }
@@ -61,7 +64,7 @@ struct Dependency {
     version: String,
 }
 
-fn document_current_crate(cli: &Cli) -> Result<()> {
+fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
     println!("🔨 Generating rustdoc JSON for current crate...");
 
     // Run cargo rustdoc to generate JSON
@@ -105,7 +108,8 @@ fn document_current_crate(cli: &Cli) -> Result<()> {
 
     let crate_name = root_package["name"]
         .as_str()
-        .context("Missing 'name' in package")?;
+        .context("Missing 'name' in package")?
+        .to_string();
 
     // Find the generated JSON file
     let json_path = PathBuf::from("target/doc").join(format!("{}.json", crate_name.replace("-", "_")));
@@ -126,22 +130,22 @@ fn document_current_crate(cli: &Cli) -> Result<()> {
 
     rustdoc_json_to_markdown::convert_json_file(&options)?;
 
-    println!("✓ Documentation complete! Output written to: {}", cli.output.display());
+    println!("✓ Documentation complete! Output written to: {}/{}", cli.output.display(), crate_name);
 
-    Ok(())
+    Ok(Some(crate_name))
 }
 
-fn document_all_dependencies(cli: &Cli) -> Result<()> {
+fn document_all_dependencies(cli: &Cli) -> Result<Vec<String>> {
     let deps_to_document = get_all_dependencies()?;
 
     if deps_to_document.is_empty() {
         println!("No dependencies found");
-        return Ok(());
+        return Ok(Vec::new());
     }
 
     println!("📦 Documenting {} dependencies...", deps_to_document.len());
 
-    let mut successful = 0;
+    let mut successful = Vec::new();
     let mut failed = Vec::new();
 
     for dep in &deps_to_document {
@@ -149,7 +153,7 @@ fn document_all_dependencies(cli: &Cli) -> Result<()> {
 
         match document_single_dependency(dep, &cli.output, cli.include_private) {
             Ok(()) => {
-                successful += 1;
+                successful.push(dep.name.clone());
                 println!("  ✓ Successfully documented '{}'", dep.name);
             }
             Err(e) => {
@@ -160,13 +164,13 @@ fn document_all_dependencies(cli: &Cli) -> Result<()> {
     }
 
     println!("\n📊 Summary:");
-    println!("  ✓ Successful: {}", successful);
+    println!("  ✓ Successful: {}", successful.len());
     if !failed.is_empty() {
         println!("  ✗ Failed: {} ({})", failed.len(), failed.join(", "));
     }
-    println!("\n✓ Documentation written to: {}", cli.output.display());
+    println!("\n✓ Documentation written to: {}/deps", cli.output.display());
 
-    Ok(())
+    Ok(successful)
 }
 
 fn document_dependencies(cli: &Cli) -> Result<()> {
@@ -313,8 +317,9 @@ fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_p
         bail!("Generated JSON file not found at {}", json_path.display());
     }
 
-    // Convert to markdown in a subdirectory
-    let output_dir = output_base.join("deps").join(&dep.name);
+    // Convert to markdown in deps subdirectory
+    // The converter will create a subdirectory with the crate name
+    let output_dir = output_base.join("deps");
 
     let options = ConversionOptions {
         input_path: &json_path,
@@ -323,6 +328,47 @@ fn document_single_dependency(dep: &Dependency, output_base: &PathBuf, include_p
     };
 
     rustdoc_json_to_markdown::convert_json_file(&options)?;
+
+    Ok(())
+}
+
+fn generate_master_index(
+    output_dir: &PathBuf,
+    current_crate: Option<&str>,
+    dependencies: &[String],
+) -> Result<()> {
+    use std::fs;
+
+    let mut content = String::new();
+
+    content.push_str("# Documentation Index\n\n");
+    content.push_str("Generated markdown documentation for this project.\n\n");
+
+    // Current crate section
+    if let Some(crate_name) = current_crate {
+        content.push_str("## Current Crate\n\n");
+        content.push_str(&format!("- [`{}`]({}index.md)\n\n", crate_name, crate_name.to_string() + "/"));
+    }
+
+    // Dependencies section
+    if !dependencies.is_empty() {
+        content.push_str(&format!("## Dependencies ({})\n\n", dependencies.len()));
+
+        for dep in dependencies {
+            let dep_path = format!("deps/{}/index.md", dep);
+            content.push_str(&format!("- [`{}`]({})\n", dep, dep_path));
+        }
+        content.push_str("\n");
+    }
+
+    content.push_str("---\n\n");
+    content.push_str("Generated with [rustdoc-json-to-markdown](https://github.com/Crazytieguy/rustdoc-json-to-markdown)\n");
+
+    let index_path = output_dir.join("index.md");
+    fs::write(&index_path, content)
+        .with_context(|| format!("Failed to write master index: {}", index_path.display()))?;
+
+    println!("\n✓ Master index created: {}", index_path.display());
 
     Ok(())
 }
