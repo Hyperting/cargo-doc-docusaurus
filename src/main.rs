@@ -22,9 +22,9 @@ struct Cli {
     #[arg(
         short,
         long,
-        default_value = "docs",
-        help = "Output directory [default: docs]\n\
-                Creates: docs/index.md (master index), docs/crate_name/*.md (modules)"
+        default_value = "target/doc-md",
+        help = "Output directory [default: target/doc-md]\n\
+                Creates: target/doc-md/index.md (master index), target/doc-md/crate_name/*.md (modules)"
     )]
     output: PathBuf,
 

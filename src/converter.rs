@@ -325,19 +325,36 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                     .collect();
 
                 if !user_impls.is_empty() {
-                    output.push_str("**Trait Implementations:**\n\n");
+                    let mut derives = Vec::new();
+                    let mut trait_with_methods = Vec::new();
+
                     for impl_block in user_impls {
                         if let Some(trait_ref) = &impl_block.trait_ {
-                            output.push_str(&format!("- **{}**\n", trait_ref.path));
                             let methods = format_impl_methods(impl_block, crate_data);
-                            if !methods.is_empty() {
-                                for line in methods.lines() {
-                                    output.push_str(&format!("  {}\n", line));
-                                }
+                            if methods.is_empty() {
+                                derives.push(trait_ref.path.as_str());
+                            } else {
+                                trait_with_methods.push((trait_ref, methods));
                             }
                         }
                     }
-                    output.push('\n');
+
+                    if !derives.is_empty() {
+                        output.push_str("**Derived Traits:** ");
+                        output.push_str(&derives.join(", "));
+                        output.push_str("\n\n");
+                    }
+
+                    if !trait_with_methods.is_empty() {
+                        output.push_str("**Trait Implementations:**\n\n");
+                        for (trait_ref, methods) in trait_with_methods {
+                            output.push_str(&format!("- **{}**\n", trait_ref.path));
+                            for line in methods.lines() {
+                                output.push_str(&format!("  {}\n", line));
+                            }
+                        }
+                        output.push('\n');
+                    }
                 }
             }
         }
@@ -428,19 +445,36 @@ fn format_item(item_id: &rustdoc_types::Id, item: &Item, crate_data: &Crate) -> 
                     .collect();
 
                 if !user_impls.is_empty() {
-                    output.push_str("**Trait Implementations:**\n\n");
+                    let mut derives = Vec::new();
+                    let mut trait_with_methods = Vec::new();
+
                     for impl_block in user_impls {
                         if let Some(trait_ref) = &impl_block.trait_ {
-                            output.push_str(&format!("- **{}**\n", trait_ref.path));
                             let methods = format_impl_methods(impl_block, crate_data);
-                            if !methods.is_empty() {
-                                for line in methods.lines() {
-                                    output.push_str(&format!("  {}\n", line));
-                                }
+                            if methods.is_empty() {
+                                derives.push(trait_ref.path.as_str());
+                            } else {
+                                trait_with_methods.push((trait_ref, methods));
                             }
                         }
                     }
-                    output.push('\n');
+
+                    if !derives.is_empty() {
+                        output.push_str("**Derived Traits:** ");
+                        output.push_str(&derives.join(", "));
+                        output.push_str("\n\n");
+                    }
+
+                    if !trait_with_methods.is_empty() {
+                        output.push_str("**Trait Implementations:**\n\n");
+                        for (trait_ref, methods) in trait_with_methods {
+                            output.push_str(&format!("- **{}**\n", trait_ref.path));
+                            for line in methods.lines() {
+                                output.push_str(&format!("  {}\n", line));
+                            }
+                        }
+                        output.push('\n');
+                    }
                 }
             }
         }
@@ -630,7 +664,13 @@ fn format_function_signature(name: &str, f: &rustdoc_types::Function) -> String 
 fn format_type(ty: &rustdoc_types::Type) -> String {
     use rustdoc_types::Type;
     match ty {
-        Type::ResolvedPath(path) => path.path.clone(),
+        Type::ResolvedPath(path) => {
+            let mut result = path.path.clone();
+            if let Some(args) = &path.args {
+                result.push_str(&format_generic_args(args));
+            }
+            result
+        }
         Type::DynTrait(dt) => {
             if let Some(first) = dt.traits.first() {
                 format!("dyn {}", first.trait_.path)
@@ -662,11 +702,12 @@ fn format_type(ty: &rustdoc_types::Type) -> String {
             is_mutable,
             type_,
         } => {
-            let lifetime_str = lifetime.as_deref().unwrap_or("'_");
+            let lifetime_str = lifetime.as_deref().unwrap_or("");
+            let space = if lifetime_str.is_empty() { "" } else { " " };
             if *is_mutable {
-                format!("&{} mut {}", lifetime_str, format_type(type_))
+                format!("&{}{} mut {}", lifetime_str, space, format_type(type_))
             } else {
-                format!("&{} {}", lifetime_str, format_type(type_))
+                format!("&{}{}{}", lifetime_str, space, format_type(type_))
             }
         }
         Type::QualifiedPath {
@@ -681,6 +722,42 @@ fn format_type(ty: &rustdoc_types::Type) -> String {
                 format!("{}::{}", format_type(self_type), name)
             }
         }
+    }
+}
+
+fn format_generic_args(args: &rustdoc_types::GenericArgs) -> String {
+    use rustdoc_types::{GenericArg, GenericArgs};
+    match args {
+        GenericArgs::AngleBracketed { args, .. } => {
+            if args.is_empty() {
+                String::new()
+            } else {
+                let formatted: Vec<String> = args
+                    .iter()
+                    .filter_map(|arg| match arg {
+                        GenericArg::Lifetime(lt) if lt != "'_" => Some(lt.clone()),
+                        GenericArg::Lifetime(_) => None,
+                        GenericArg::Type(ty) => Some(format_type(ty)),
+                        GenericArg::Const(c) => Some(c.expr.clone()),
+                        GenericArg::Infer => Some("_".to_string()),
+                    })
+                    .collect();
+                if formatted.is_empty() {
+                    String::new()
+                } else {
+                    format!("<{}>", formatted.join(", "))
+                }
+            }
+        }
+        GenericArgs::Parenthesized { inputs, output } => {
+            let inputs_str: Vec<_> = inputs.iter().map(format_type).collect();
+            let mut result = format!("({})", inputs_str.join(", "));
+            if let Some(output) = output {
+                result.push_str(&format!(" -> {}", format_type(output)));
+            }
+            result
+        }
+        GenericArgs::ReturnTypeNotation => "(..)".to_string(),
     }
 }
 

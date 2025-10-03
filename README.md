@@ -29,7 +29,7 @@ cargo doc-md -o docs/
 ### Output Structure
 
 ```
-docs/
+target/doc-md/
   index.md                    # Master index
   your_crate/
     index.md                  # Crate overview
@@ -69,7 +69,7 @@ docs/
 cargo doc-md [OPTIONS] [INPUT]
 
 Options:
-  -o, --output <DIR>        Output directory [default: docs]
+  -o, --output <DIR>        Output directory [default: target/doc-md]
       --all-deps            Document only dependencies (exclude current crate)
       --deps <CRATES>       Document specific dependencies (comma-separated)
       --include-private     Include private items
