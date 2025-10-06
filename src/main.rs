@@ -113,10 +113,14 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         .context("Failed to run cargo rustdoc")?;
 
     if !output.status.success() {
-        bail!(
-            "cargo rustdoc failed:\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        if stderr.contains("no library targets found") {
+            println!("⚠ No library target found in current crate, skipping current crate documentation");
+            return Ok(None);
+        }
+
+        bail!("cargo rustdoc failed:\n{}", stderr);
     }
 
     // Get the crate name from cargo metadata
