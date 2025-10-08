@@ -1,0 +1,59 @@
+---
+source: tests/snapshot_tests.rs
+expression: deep_content
+---
+**test_crate > nested > inner > deep**
+
+# Module: nested::inner::deep
+
+## Contents
+
+**Modules**
+
+- [`deeper`](#deeper) - Even deeper nesting.
+
+**Structs**
+
+- [`DeepStruct`](#deepstruct) - A struct in the deeply nested module.
+
+**Functions**
+
+- [`deep_function`](#deep_function) - A function in the deeply nested module.
+
+---
+
+## test_crate::nested::inner::deep::DeepStruct
+
+**Type:** Struct
+
+A struct in the deeply nested module.
+
+**Fields:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `data` | `String` | - |
+
+**Methods:**
+
+- `fn new(data: String) -> Self` - Creates a new `DeepStruct`.
+- `fn len(self: &Self) -> usize` - Returns the length of the data.
+- `fn is_empty(self: &Self) -> bool` - Returns `true` if the data is empty.
+
+
+
+## test_crate::nested::inner::deep::deep_function
+
+**Type:** Function
+
+A function in the deeply nested module.
+
+```rust
+fn deep_function() -> i32
+```
+
+
+
+## Module: deeper
+
+Even deeper nesting.

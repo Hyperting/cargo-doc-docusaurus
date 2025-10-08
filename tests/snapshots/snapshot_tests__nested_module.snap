@@ -1,0 +1,42 @@
+---
+source: tests/snapshot_tests.rs
+expression: nested_content
+---
+**test_crate > nested**
+
+# Module: nested
+
+## Contents
+
+**Modules**
+
+- [`inner`](#inner) - Inner module with its own types and functions.
+
+**Structs**
+
+- [`OuterStruct`](#outerstruct) - An outer struct that contains an inner struct.
+
+---
+
+## test_crate::nested::OuterStruct
+
+**Type:** Struct
+
+An outer struct that contains an inner struct.
+
+**Fields:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `inner` | `inner::InnerStruct` | - |
+
+**Methods:**
+
+- `fn new(value: i32) -> Self` - Creates a new `OuterStruct`.
+- `fn get_value(self: &Self) -> i32` - Gets the inner value.
+
+
+
+## Module: inner
+
+Inner module with its own types and functions.

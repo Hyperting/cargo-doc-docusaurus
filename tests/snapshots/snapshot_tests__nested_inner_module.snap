@@ -1,0 +1,58 @@
+---
+source: tests/snapshot_tests.rs
+expression: inner_content
+---
+**test_crate > nested > inner**
+
+# Module: nested::inner
+
+## Contents
+
+**Modules**
+
+- [`deep`](#deep) - Deeply nested module.
+
+**Structs**
+
+- [`InnerStruct`](#innerstruct) - A struct defined in the inner module.
+
+**Functions**
+
+- [`inner_function`](#inner_function) - A function in the inner module.
+
+---
+
+## test_crate::nested::inner::InnerStruct
+
+**Type:** Struct
+
+A struct defined in the inner module.
+
+**Fields:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `value` | `i32` | - |
+
+**Methods:**
+
+- `fn new(value: i32) -> Self` - Creates a new `InnerStruct`.
+- `fn double(self: & mut Self)` - Doubles the value.
+
+
+
+## Module: deep
+
+Deeply nested module.
+
+
+
+## test_crate::nested::inner::inner_function
+
+**Type:** Function
+
+A function in the inner module.
+
+```rust
+fn inner_function() -> &'static str
+```
