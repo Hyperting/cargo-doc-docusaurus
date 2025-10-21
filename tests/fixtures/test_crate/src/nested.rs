@@ -72,6 +72,42 @@ pub mod inner {
 
 pub use inner::InnerStruct;
 
+/// Module that demonstrates glob re-exports (pub use module::*).
+/// This should generate duplicate documentation like rustdoc does.
+pub mod reexport_test {
+    /// Items that will be glob re-exported.
+    pub mod items {
+        /// A struct that will be re-exported via glob.
+        pub struct GlobStruct {
+            pub field: String,
+        }
+
+        impl GlobStruct {
+            /// Creates a new GlobStruct.
+            pub fn new(field: String) -> Self {
+                Self { field }
+            }
+        }
+
+        /// An enum that will be re-exported via glob.
+        pub enum GlobEnum {
+            /// First variant.
+            Variant1,
+            /// Second variant with data.
+            Variant2(i32),
+        }
+
+        /// A function that will be re-exported via glob.
+        pub fn glob_function() -> &'static str {
+            "glob re-exported"
+        }
+    }
+
+    // Glob re-export: this should cause duplicate pages to be generated
+    // just like rustdoc does with HTML files
+    pub use items::*;
+}
+
 /// An outer struct that contains an inner struct.
 pub struct OuterStruct {
     pub inner: inner::InnerStruct,

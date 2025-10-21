@@ -1,6 +1,6 @@
 # Snapshot Tests
 
-This directory contains snapshot tests for the cargo-doc-md tool. Snapshot testing ensures that the markdown output remains consistent across changes.
+This directory contains snapshot tests for the cargo-doc-docusaurus tool. Snapshot testing ensures that the markdown output remains consistent across changes.
 
 ## Structure
 

@@ -6,13 +6,15 @@
 //! # Example
 //!
 //! ```no_run
-//! use cargo_doc_md::{convert_json_file, ConversionOptions};
+//! use cargo_doc_docusaurus::{convert_json_file, ConversionOptions};
 //! use std::path::Path;
 //!
 //! let options = ConversionOptions {
 //!     input_path: Path::new("target/doc/my_crate.json"),
 //!     output_dir: Path::new("docs"),
 //!     include_private: false,
+//!     base_path: "",
+//!     workspace_crates: &[],
 //! };
 //!
 //! convert_json_file(&options).expect("Conversion failed");
@@ -35,6 +37,10 @@ pub struct ConversionOptions<'a> {
     pub output_dir: &'a Path,
     /// Whether to include private items in the output
     pub include_private: bool,
+    /// Base path for links (e.g., "/docs/runtime/rust" for Docusaurus routing)
+    pub base_path: &'a str,
+    /// List of workspace crate names - external crates in this list will use internal links
+    pub workspace_crates: &'a [String],
 }
 
 /// Convert a rustdoc JSON file to markdown (multi-file output).
@@ -52,20 +58,27 @@ pub struct ConversionOptions<'a> {
 /// # Example
 ///
 /// ```no_run
-/// use cargo_doc_md::{convert_json_file, ConversionOptions};
+/// use cargo_doc_docusaurus::{convert_json_file, ConversionOptions};
 /// use std::path::Path;
 ///
 /// let options = ConversionOptions {
 ///     input_path: Path::new("target/doc/my_crate.json"),
 ///     output_dir: Path::new("docs"),
 ///     include_private: false,
+///     base_path: "",  // Optional: use "/docs/runtime/rust" for Docusaurus routing
+///     workspace_crates: &[],
 /// };
 ///
 /// convert_json_file(&options).expect("Conversion failed");
 /// ```
 pub fn convert_json_file(options: &ConversionOptions) -> Result<()> {
     let crate_data = parser::load_rustdoc_json(options.input_path)?;
-    let output = converter::convert_to_markdown_multifile(&crate_data, options.include_private)?;
+    let output = converter::convert_to_markdown_multifile(
+        &crate_data, 
+        options.include_private, 
+        options.base_path,
+        options.workspace_crates,
+    )?;
 
     // Write to crate-specific subdirectory
     let crate_output_dir = options.output_dir.join(&output.crate_name);

@@ -78,7 +78,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-doc-md"
+name = "cargo-doc-docusaurus"
 version = "0.7.5"
 dependencies = [
  "anyhow",

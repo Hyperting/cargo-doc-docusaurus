@@ -2,7 +2,10 @@
 source: tests/snapshot_tests.rs
 expression: index_content
 ---
-# test_crate
+import RustCode from '@site/src/components/RustCode';
+import Link from '@docusaurus/Link';
+
+# Crate test_crate
 
 # Test Crate
 
@@ -53,56 +56,86 @@ This crate has no feature flags but demonstrates documentation of them.
 
 This crate contains `unsafe` code examples for documentation purposes only.
 
+## Re-exports
+
+<RustCode inline code={`pub use patterns::Builder;`} links={[{"text": "Builder", "href": "/test_crate/patterns/struct.Builder"}]} />
+
+<RustCode inline code={`pub use patterns::Newtype;`} links={[{"text": "Newtype", "href": "/test_crate/patterns/struct.Newtype"}]} />
+
+<RustCode inline code={`pub use errors::CustomError;`} links={[{"text": "CustomError", "href": "/test_crate/errors/enum.CustomError"}]} />
+
 ## Modules
 
-### [`test_crate`](test_crate.md)
+<div><Link to="async_example/" className="rust-mod">async_example</Link></div>
 
-*2 traits, 2 type aliases, 3 constants, 3 enums, 6 structs, 7 functions, 8 modules*
+<div><Link to="errors/" className="rust-mod">errors</Link></div>
 
-### [`async_example`](async_example.md)
+<div><Link to="functions/" className="rust-mod">functions</Link> — Function examples demonstrating various signatures and patterns.</div>
 
-*2 structs, 2 traits, 5 functions*
+<div><Link to="lifetimes/" className="rust-mod">lifetimes</Link></div>
 
-### [`errors`](errors.md)
+<div><Link to="nested/" className="rust-mod">nested</Link> — Demonstrates nested module hierarchies.</div>
 
-*1 enums, 1 structs, 1 traits, 1 type aliases, 3 functions*
+<div><Link to="patterns/" className="rust-mod">patterns</Link></div>
 
-### [`functions`](functions.md)
+<div><Link to="traits/" className="rust-mod">traits</Link></div>
 
-*12 functions*
+<div><Link to="types/" className="rust-mod">types</Link> — Type definitions and containers.</div>
 
-### [`lifetimes`](lifetimes.md)
+## Structs
 
-*1 enums, 1 traits, 3 functions, 4 structs*
+<div><Link to="struct.BoundedGeneric" className="rust-struct">BoundedGeneric</Link> </div>
 
-### [`nested`](nested.md)
+<div><Link to="struct.Error" className="rust-struct">Error</Link> </div>
 
-*1 modules, 1 structs*
+<div><Link to="struct.GenericStruct" className="rust-struct">GenericStruct</Link> </div>
 
-### [`nested::inner`](nested/inner.md)
+<div><Link to="struct.PlainStruct" className="rust-struct">PlainStruct</Link> </div>
 
-*1 functions, 1 modules, 1 structs*
+<div><Link to="struct.TupleStruct" className="rust-struct">TupleStruct</Link> </div>
 
-### [`nested::inner::deep`](nested/inner/deep.md)
+<div><Link to="struct.UnitStruct" className="rust-struct">UnitStruct</Link> </div>
 
-*1 functions, 1 modules, 1 structs*
+## Enums
 
-### [`nested::inner::deep::deeper`](nested/inner/deep/deeper.md)
+<div><Link to="enum.ComplexEnum" className="rust-struct">ComplexEnum</Link> </div>
 
-*1 structs*
+<div><Link to="enum.GenericEnum" className="rust-struct">GenericEnum</Link> </div>
 
-### [`patterns`](patterns.md)
+<div><Link to="enum.SimpleEnum" className="rust-struct">SimpleEnum</Link> </div>
 
-*8 structs*
+## Functions
 
-### [`traits`](traits.md)
+<div><Link to="fn.const_function" className="rust-fn">const_function</Link> </div>
 
-*11 traits, 2 structs*
+<div><Link to="fn.function_with_args" className="rust-fn">function_with_args</Link> </div>
 
-### [`traits::private`](traits/private.md)
+<div><Link to="fn.function_with_result" className="rust-fn">function_with_result</Link> </div>
 
-*1 traits*
+<div><Link to="fn.generic_function" className="rust-fn">generic_function</Link> </div>
 
-### [`types`](types.md)
+<div><Link to="fn.multiple_bounds" className="rust-fn">multiple_bounds</Link> </div>
 
-*1 enums, 2 constants, 2 type aliases, 3 structs*
+<div><Link to="fn.simple_function" className="rust-fn">simple_function</Link> </div>
+
+<div><Link to="fn.unsafe_function" className="rust-fn">unsafe_function</Link>  — An unsafe function that dereferences a raw pointer.</div>
+
+## Traits
+
+<div><Link to="trait.DisplayDebug" className="rust-trait">DisplayDebug</Link> </div>
+
+<div><Link to="trait.MyTrait" className="rust-trait">MyTrait</Link> </div>
+
+## Constants
+
+<div><Link to="constant.MAX_SIZE" className="rust-constant">MAX_SIZE</Link> </div>
+
+<div><Link to="constant.MIN_SIZE" className="rust-constant">MIN_SIZE</Link> </div>
+
+<div><Link to="constant.VERSION" className="rust-constant">VERSION</Link> </div>
+
+## Type Aliases
+
+<div><Link to="type.GenericResult" className="rust-type">GenericResult</Link> </div>
+
+<div><Link to="type.Result" className="rust-type">Result</Link> </div>

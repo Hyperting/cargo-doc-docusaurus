@@ -1,0 +1,144 @@
+/**
+ * Rust Documentation Styles
+ * This file contains CSS variables and styles for Rust documentation components.
+ */
+
+/* ===========================================================================
+   CSS VARIABLES - CUSTOMIZE IN custom.css
+   =========================================================================== */
+
+:root {
+  /* Rust Item Colors - Light Mode */
+  --rust-color-module: rgb(173, 124, 0);
+  --rust-color-module-hover: rgb(200, 140, 0);
+  --rust-color-struct: rgb(0, 125, 119);
+  --rust-color-struct-hover: rgb(0, 150, 140);
+  --rust-color-trait: rgb(110, 79, 201);
+  --rust-color-trait-hover: rgb(130, 100, 220);
+  --rust-color-function: rgb(0, 92, 197);
+  --rust-color-function-hover: rgb(0, 110, 220);
+  
+  /* Prism Token Colors - Light Mode */
+  --rust-prism-class-name: rgb(0, 92, 197);
+  
+  /* Spacing and Layout */
+  --rust-item-spacing: 0.35em;
+  --rust-field-indent: 1.5em;
+}
+
+[data-theme='dark'] {
+  /* Rust Item Colors - Dark Mode */
+  --rust-color-module: rgb(255, 180, 84);
+  --rust-color-module-hover: rgb(255, 200, 120);
+  --rust-color-struct: rgb(45, 191, 184);
+  --rust-color-struct-hover: rgb(80, 220, 210);
+  --rust-color-trait: rgb(178, 162, 253);
+  --rust-color-trait-hover: rgb(200, 180, 255);
+  --rust-color-function: rgb(141, 219, 255);
+  --rust-color-function-hover: rgb(170, 230, 255);
+  
+  /* Prism Token Colors - Dark Mode */
+  --rust-prism-class-name: rgb(139, 233, 253);
+}
+
+/* ===========================================================================
+   PRISM CODE HIGHLIGHTING FIXES
+   =========================================================================== */
+
+/* Fix for Prism Rust tokens that don't have colors in Dracula/GitHub themes */
+[data-theme='dark'] .token.class-name {
+  color: var(--rust-prism-class-name) !important;
+}
+
+[data-theme='light'] .token.class-name {
+  color: var(--rust-prism-class-name) !important;
+}
+
+/* ===========================================================================
+   RUST ITEM LINK COLORS
+   =========================================================================== */
+
+/* Modules */
+a.rust-mod,
+.rust-mod {
+  color: var(--rust-color-module) !important;
+}
+
+a.rust-mod:hover {
+  color: var(--rust-color-module-hover) !important;
+  text-decoration: underline;
+}
+
+/* Structs and Enums */
+a.rust-struct,
+.rust-struct {
+  color: var(--rust-color-struct) !important;
+}
+
+a.rust-struct:hover {
+  color: var(--rust-color-struct-hover) !important;
+  text-decoration: underline;
+}
+
+/* Traits */
+a.rust-trait,
+.rust-trait {
+  color: var(--rust-color-trait) !important;
+}
+
+a.rust-trait:hover {
+  color: var(--rust-color-trait-hover) !important;
+  text-decoration: underline;
+}
+
+/* Functions, Constants, and Type Aliases */
+a.rust-fn,
+a.rust-constant,
+a.rust-type,
+.rust-fn,
+.rust-constant,
+.rust-type {
+  color: var(--rust-color-function) !important;
+}
+
+a.rust-fn:hover,
+a.rust-constant:hover,
+a.rust-type:hover {
+  color: var(--rust-color-function-hover) !important;
+  text-decoration: underline;
+}
+
+/* ===========================================================================
+   SPACING FOR RUST ITEM LINKS
+   =========================================================================== */
+
+/* Better spacing for item links in overview sections */
+div:has(> a.rust-mod),
+div:has(> a.rust-struct),
+div:has(> a.rust-trait),
+div:has(> a.rust-fn),
+div:has(> a.rust-constant),
+div:has(> a.rust-type) {
+  margin: var(--rust-item-spacing) 0;
+  line-height: 1.5;
+}
+
+/* ===========================================================================
+   FIELD DOCUMENTATION STYLING
+   =========================================================================== */
+
+/* Rust field documentation with indentation */
+.rust-field-doc {
+  margin: 0.5em 0 1em var(--rust-field-indent);
+  color: var(--ifm-color-content-secondary);
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+[data-theme='dark'] .rust-field-doc {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+[data-theme='light'] .rust-field-doc {
+  color: rgba(0, 0, 0, 0.7);
+}

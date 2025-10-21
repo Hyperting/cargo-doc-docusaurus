@@ -9,6 +9,7 @@
 //! - Higher-order functions
 
 use std::ops::Mul;
+use std::collections::HashMap;
 
 /// Adds two numbers together.
 ///
@@ -167,4 +168,39 @@ where
     V: Clone + PartialEq,
 {
     format!("t: {}, u: {:?}", t, u)
+}
+
+/// A function with a very long signature that should be formatted on multiple lines.
+/// 
+/// This function demonstrates how multi-line signatures are rendered in the documentation.
+/// It takes many parameters with complex types to trigger the multi-line formatting.
+/// 
+/// # Arguments
+/// 
+/// * `user_id` - The unique identifier for the user
+/// * `session_data` - A map containing session information
+/// * `config_options` - A vector of configuration key-value pairs
+/// * `timeout_seconds` - The timeout duration in seconds
+/// 
+/// # Returns
+/// 
+/// A Result containing a HashMap with processed data or an error message
+pub fn function_with_very_long_signature(
+    user_id: u64,
+    session_data: HashMap<String, String>,
+    config_options: Vec<(String, String)>,
+    timeout_seconds: u64,
+) -> Result<HashMap<String, Vec<u8>>, String> {
+    let mut result = HashMap::new();
+    result.insert(user_id.to_string(), vec![timeout_seconds as u8]);
+    
+    for (key, value) in session_data {
+        result.insert(key, value.into_bytes());
+    }
+    
+    for (key, value) in config_options {
+        result.insert(format!("config_{}", key), value.into_bytes());
+    }
+    
+    Ok(result)
 }

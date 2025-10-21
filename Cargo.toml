@@ -1,19 +1,19 @@
 [package]
-name = "cargo-doc-md"
+name = "cargo-doc-docusaurus"
 version = "0.7.5"
 edition = "2024"
 authors = ["Claude (Anthropic AI) <noreply@anthropic.com>"]
 license = "MIT OR Apache-2.0"
-description = "Cargo subcommand to generate markdown documentation for Rust crates and dependencies"
+description = "Cargo subcommand to generate Docusaurus-compatible documentation for Rust crates and dependencies"
 readme = "README.md"
-repository = "https://github.com/Crazytieguy/cargo-doc-md"
-homepage = "https://github.com/Crazytieguy/cargo-doc-md"
-keywords = ["cargo-subcommand", "markdown", "documentation", "rustdoc", "cargo"]
+repository = "https://github.com/Hyperting/cargo-doc-docusaurus"
+homepage = "https://github.com/Hyperting/cargo-doc-docusaurus"
+keywords = ["cargo-subcommand", "docusaurus", "documentation", "rustdoc", "cargo"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.85"
 
 [[bin]]
-name = "cargo-doc-md"
+name = "cargo-doc-docusaurus"
 path = "src/main.rs"
 
 [dependencies]

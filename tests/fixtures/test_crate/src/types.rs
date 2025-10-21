@@ -48,6 +48,44 @@ impl<T> Container<T> {
     pub fn iter(&self) -> std::slice::Iter<'_, T> {
         self.items.iter()
     }
+
+    /// Processes items with complex filtering and transformation options.
+    ///
+    /// This method demonstrates a long signature with multiple parameters
+    /// to test multi-line formatting in method documentation.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter_fn` - A function to filter items
+    /// * `transform_map` - A map of transformations to apply
+    /// * `options` - Processing options as key-value pairs
+    /// * `timeout_ms` - Maximum processing time in milliseconds
+    ///
+    /// # Returns
+    ///
+    /// A Result containing the processed items or an error message
+    pub fn process_with_options<F>(
+        &self,
+        filter_fn: F,
+        transform_map: HashMap<String, String>,
+        options: Vec<(String, String)>,
+        timeout_ms: u64,
+    ) -> Result<Vec<String>, String>
+    where
+        F: Fn(&T) -> bool,
+        T: std::fmt::Debug,
+    {
+        let mut result = Vec::new();
+        
+        for item in self.items.iter().filter(|item| filter_fn(item)) {
+            result.push(format!("{:?}", item));
+        }
+        
+        // Simulate using the parameters
+        let _ = (transform_map, options, timeout_ms);
+        
+        Ok(result)
+    }
 }
 
 impl<T> Default for Container<T> {

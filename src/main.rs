@@ -1,19 +1,19 @@
 use anyhow::{Context, Result, bail};
-use cargo_doc_md::ConversionOptions;
+use cargo_doc_docusaurus::ConversionOptions;
 use clap::Parser;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Parser)]
-#[command(name = "cargo-doc-md")]
+#[command(name = "cargo-doc-docusaurus")]
 #[command(
-    about = "Generate markdown documentation for Rust crates and dependencies",
-    long_about = "Cargo subcommand to generate markdown documentation for Rust crates and their dependencies.\n\n\
+    about = "Generate Docusaurus-compatible documentation for Rust crates and dependencies",
+    long_about = "Cargo subcommand to generate Docusaurus-compatible documentation for Rust crates and their dependencies.\n\n\
                   Default behavior: Documents current crate + all dependencies with multi-file output.\n\
-                  Creates a master index and organizes modules into separate files for easy navigation.\n\n\
+                  Creates a master index and organizes modules into separate files for Docusaurus.\n\n\
                   Usage:\n  \
-                  cargo doc-md              # Document current crate + all dependencies\n  \
-                  cargo doc-md --all-deps   # Document only dependencies"
+                  cargo doc-docusaurus              # Document current crate + all dependencies\n  \
+                  cargo doc-docusaurus --all-deps   # Document only dependencies"
 )]
 struct Cli {
     #[arg(help = "Path to rustdoc JSON file (omit to auto-document current crate + all deps)")]
@@ -33,6 +33,20 @@ struct Cli {
 
     #[arg(
         long,
+        help = "Base path for links (e.g., '/docs/runtime/rust' for Docusaurus)",
+        default_value = ""
+    )]
+    base_path: String,
+
+    #[arg(
+        long,
+        help = "Workspace crates (comma-separated) - external crates in this list will use internal links instead of docs.rs",
+        value_delimiter = ','
+    )]
+    workspace_crates: Vec<String>,
+
+    #[arg(
+        long,
         help = "Document only specific dependencies (comma-separated)",
         value_delimiter = ','
     )]
@@ -46,11 +60,11 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
-    // When invoked as `cargo doc-md`, cargo passes an extra "doc-md" argument
-    // Skip it if present to support both `cargo doc-md` and `cargo-doc-md` invocations
+    // When invoked as `cargo doc-docusaurus`, cargo passes an extra "doc-docusaurus" argument
+    // Skip it if present to support both `cargo doc-docusaurus` and `cargo-doc-docusaurus` invocations
     let args = std::env::args()
         .enumerate()
-        .filter(|(i, arg)| !(*i == 1 && arg == "doc-md"))
+        .filter(|(i, arg)| !(*i == 1 && arg == "doc-docusaurus"))
         .map(|(_, arg)| arg);
 
     let cli = Cli::parse_from(args);
@@ -61,9 +75,11 @@ fn main() -> Result<()> {
             input_path: input,
             output_dir: &cli.output,
             include_private: cli.include_private,
+            base_path: &cli.base_path,
+            workspace_crates: &cli.workspace_crates,
         };
 
-        cargo_doc_md::convert_json_file(&options)?;
+        cargo_doc_docusaurus::convert_json_file(&options)?;
         println!(
             "✓ Conversion complete! Output written to: {}",
             cli.output.display()
@@ -167,9 +183,11 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         input_path: &json_path,
         output_dir: &cli.output,
         include_private: cli.include_private,
+        base_path: &cli.base_path,
+        workspace_crates: &cli.workspace_crates,
     };
 
-    cargo_doc_md::convert_json_file(&options)?;
+    cargo_doc_docusaurus::convert_json_file(&options)?;
 
     println!(
         "✓ Documentation complete! Output written to: {}/{}",
@@ -196,7 +214,7 @@ fn document_all_dependencies(cli: &Cli) -> Result<Vec<String>> {
     for dep in &deps_to_document {
         println!("\n🔨 Generating docs for '{}'...", dep.name);
 
-        match document_single_dependency(dep, &cli.output, cli.include_private) {
+        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates) {
             Ok(()) => {
                 successful.push(dep.name.clone());
                 println!("  ✓ Successfully documented '{}'", dep.name);
@@ -249,7 +267,7 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
     for dep in &deps_to_document {
         println!("\n🔨 Generating docs for '{}'...", dep.name);
 
-        match document_single_dependency(dep, &cli.output, cli.include_private) {
+        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates) {
             Ok(()) => {
                 successful += 1;
                 println!("  ✓ Successfully documented '{}'", dep.name);
@@ -336,6 +354,8 @@ fn document_single_dependency(
     dep: &Dependency,
     output_base: &Path,
     include_private: bool,
+    base_path: &str,
+    workspace_crates: &[String],
 ) -> Result<()> {
     // Build the package specification
     // If we have a version, use name@version to disambiguate multiple versions
@@ -383,9 +403,11 @@ fn document_single_dependency(
         input_path: &json_path,
         output_dir: &output_dir,
         include_private,
+        base_path,
+        workspace_crates,
     };
 
-    cargo_doc_md::convert_json_file(&options)?;
+    cargo_doc_docusaurus::convert_json_file(&options)?;
 
     Ok(())
 }
@@ -425,7 +447,7 @@ fn generate_master_index(
 
     content.push_str("---\n\n");
     content.push_str(
-        "Generated with [cargo-doc-md](https://github.com/Crazytieguy/cargo-doc-md)\n",
+        "Generated with [cargo-doc-docusaurus](https://github.com/Hyperting/cargo-doc-docusaurus)\n",
     );
 
     let index_path = output_dir.join("index.md");

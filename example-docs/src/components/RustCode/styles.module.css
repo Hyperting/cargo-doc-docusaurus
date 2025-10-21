@@ -1,0 +1,39 @@
+/**
+ * CSS Module for RustCode component
+ */
+
+/* Inline code styling (for method signatures, fields, etc.) */
+.inlineCode {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.9375em; /* 15px on 16px base */
+  background: none !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin-bottom: 0.5em;
+  display: block;
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.inlineCode div {
+  display: block;
+}
+
+/* Space between inline code and following documentation paragraph */
+.inlineCode + p {
+  margin-top: 0.75em;
+}
+
+/* Clickable type links in code */
+.typeLink {
+  text-decoration: none;
+  cursor: pointer;
+  border-bottom: 1px dotted currentColor;
+}
+
+.typeLink:hover {
+  text-decoration: none;
+  opacity: 0.8;
+}

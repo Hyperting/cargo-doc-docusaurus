@@ -2,192 +2,34 @@
 source: tests/snapshot_tests.rs
 expression: types_content
 ---
+---
+title: types
+---
+
 **test_crate > types**
 
 # Module: types
 
-## Contents
+## Structs
 
-**Structs**
+[`Container`](struct.Container) — A generic container for items of type `T`.
 
-- [`Container`](#container) - A generic container for items of type `T`.
-- [`Pair`](#pair) - A pair of related values.
-- [`RefStruct`](#refstruct) - A struct with a lifetime parameter.
+[`Pair`](struct.Pair) — A pair of related values.
 
-**Enums**
+[`RefStruct`](struct.RefStruct) — A struct with a lifetime parameter.
 
-- [`Status`](#status) - Represents the status of an operation.
+## Enums
 
-**Constants**
+[`Status`](enum.Status) — Represents the status of an operation.
 
-- [`DEFAULT_CAPACITY`](#default_capacity) - The default capacity for containers.
-- [`MAX_RETRIES`](#max_retries) - The maximum number of retries.
+## Constants
 
-**Type Aliases**
+[`DEFAULT_CAPACITY`](constant.DEFAULT_CAPACITY) — The default capacity for containers.
 
-- [`Map`](#map) - A type alias for a generic key-value map.
-- [`StringMap`](#stringmap) - A type alias for a string-to-string map.
+[`MAX_RETRIES`](constant.MAX_RETRIES) — The maximum number of retries.
 
----
+## Type Aliases
 
-## test_crate::types::Container
+[`Map`](type.Map) — A type alias for a generic key-value map.
 
-*Struct*
-
-A generic container for items of type `T`.
-
-# Examples
-
-```
-use test_crate::types::Container;
-
-let mut container = Container::<i32>::new();
-container.add(42);
-assert_eq!(container.len(), 1);
-```
-
-**Generic Parameters:**
-- T
-
-**Fields:**
-- `items: Vec<T>`
-
-**Methods:**
-
-- `fn new() -> Self` - Creates a new empty container.
-- `fn add(self: & mut Self, item: T)` - Adds an item to the container.
-- `fn len(self: &Self) -> usize` - Returns the number of items in the container.
-- `fn is_empty(self: &Self) -> bool` - Returns `true` if the container is empty.
-- `fn iter(self: &Self) -> std::slice::Iter<T>` - Returns an iterator over the items.
-
-**Trait Implementations:**
-
-- **FromIterator**
-  - `fn from_iter<I>(iter: I) -> Self`
-- **Default**
-  - `fn default() -> Self`
-
-
-
-## test_crate::types::DEFAULT_CAPACITY
-
-*Constant*
-
-The default capacity for containers.
-
-
-
-## test_crate::types::MAX_RETRIES
-
-*Constant*
-
-The maximum number of retries.
-
-
-
-## test_crate::types::Map
-
-*Type Alias*: `std::collections::HashMap<K, V>`
-
-A type alias for a generic key-value map.
-
-
-
-## test_crate::types::Pair
-
-*Struct*
-
-A pair of related values.
-
-**Generic Parameters:**
-- T
-- U
-
-**Fields:**
-- `first: T`
-- `second: U`
-
-**Methods:**
-
-- `fn new(first: T, second: U) -> Self` - Creates a new pair.
-- `fn swap(self: Self) -> Pair<U, T>` - Swaps the values in the pair.
-
-**Traits:** Eq, Copy
-
-**Trait Implementations:**
-
-- **Clone**
-  - `fn clone(self: &Self) -> Pair<T, U>`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **From**
-  - `fn from((first, second): (T, U)) -> Self`
-- **PartialEq**
-  - `fn eq(self: &Self, other: &Pair<T, U>) -> bool`
-
-
-
-## test_crate::types::RefStruct
-
-*Struct*
-
-A struct with a lifetime parameter.
-
-Demonstrates borrowing data with an explicit lifetime.
-
-**Generic Parameters:**
-- 'a
-
-**Fields:**
-- `data: &'a str`
-
-**Methods:**
-
-- `fn new(data: &'a str) -> Self` - Creates a new `RefStruct` from borrowed data.
-- `fn get(self: &Self) -> &'a str` - Returns the borrowed data.
-
-
-
-## test_crate::types::Status
-
-*Enum*
-
-Represents the status of an operation.
-
-This enum demonstrates:
-- Unit variants
-- Struct variants with named fields
-- Multiple variant types in one enum
-
-**Variants:**
-- `Idle` - The operation is idle and waiting to start.
-- `Running{ progress: f32 }` - The operation is running with progress information.
-- `Completed` - The operation completed successfully.
-- `Failed{ error: String }` - The operation failed with an error message.
-
-**Methods:**
-
-- `fn is_running(self: &Self) -> bool` - Returns `true` if the status is `Running`.
-- `fn is_completed(self: &Self) -> bool` - Returns `true` if the status is `Completed`.
-- `fn progress(self: &Self) -> Option<f32>` - Returns the progress if the status is `Running`.
-
-**Trait Implementations:**
-
-- **PartialEq**
-  - `fn eq(self: &Self, other: &Status) -> bool`
-- **Clone**
-  - `fn clone(self: &Self) -> Status`
-- **Default**
-  - `fn default() -> Self`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-
-
-
-## test_crate::types::StringMap
-
-*Type Alias*: `std::collections::HashMap<String, String>`
-
-A type alias for a string-to-string map.
-
-Commonly used for configuration and metadata.
+[`StringMap`](type.StringMap) — A type alias for a string-to-string map.

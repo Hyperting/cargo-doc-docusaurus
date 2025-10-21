@@ -112,6 +112,7 @@ This crate contains `unsafe` code examples for documentation purposes only.
   - [const_function](#test_crate-functions-const_function)
   - [filter](#test_crate-functions-filter)
   - [for_each](#test_crate-functions-for_each)
+  - [function_with_very_long_signature](#test_crate-functions-function_with_very_long_signature)
   - [higher_order_function](#test_crate-functions-higher_order_function)
   - [map](#test_crate-functions-map)
   - [multiply](#test_crate-functions-multiply)
@@ -131,6 +132,7 @@ This crate contains `unsafe` code examples for documentation purposes only.
 - **nested**
   - [OuterStruct](#test_crate-nested-outerstruct)
   - [inner](#test_crate-nested-inner)
+  - [reexport_test](#test_crate-nested-reexport_test)
 - **nested::inner**
   - [InnerStruct](#test_crate-nested-inner-innerstruct)
   - [deep](#test_crate-nested-inner-deep)
@@ -141,6 +143,15 @@ This crate contains `unsafe` code examples for documentation purposes only.
   - [deeper](#test_crate-nested-inner-deep-deeper)
 - **nested::inner::deep::deeper**
   - [DeeperStruct](#test_crate-nested-inner-deep-deeper-deeperstruct)
+- **nested::reexport_test**
+  - [GlobEnum](#test_crate-nested-reexport_test-globenum)
+  - [GlobStruct](#test_crate-nested-reexport_test-globstruct)
+  - [glob_function](#test_crate-nested-reexport_test-glob_function)
+  - [items](#test_crate-nested-reexport_test-items)
+- **nested::reexport_test::items**
+  - [GlobEnum](#test_crate-nested-reexport_test-items-globenum)
+  - [GlobStruct](#test_crate-nested-reexport_test-items-globstruct)
+  - [glob_function](#test_crate-nested-reexport_test-items-glob_function)
 - **patterns**
   - [Builder](#test_crate-patterns-builder)
   - [Built](#test_crate-patterns-built)
@@ -181,127 +192,192 @@ This crate contains `unsafe` code examples for documentation purposes only.
 
 # Module: `test_crate`
 
-## test_crate::BoundedGeneric
+<RustCode code={`pub struct BoundedGeneric<T> {
+    pub data: T,
+}`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - T
 
-**Fields:**
-- `data: T`
+### Fields
 
-**Methods:**
-
-- `fn new(data: T) -> Self`
-- `fn clone_data(self: &Self) -> T`
+<RustCode inline code={`data: T`} links={[]} />
 
 
+### Methods
 
-## test_crate::ComplexEnum
+<RustCode inline code={`fn new(data: T) -> Self`} links={[]} />
 
-*Enum*
+---
 
-**Variants:**
+<RustCode inline code={`fn clone_data(self: &Self) -> T`} links={[]} />
+
+---
+
+
+
+<RustCode code={`pub enum ComplexEnum {
+    Unit,
+    Tuple(String, i32),
+    Struct { name: String, age: u32 },
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+### Variants
+
 - `Unit`
 - `Tuple(String, i32)`
 - `Struct{ name: String, age: u32 }`
 
-**Methods:**
+### Methods
 
-- `fn name(self: &Self) -> Option<&str>`
+<RustCode inline code={`fn name(self: &Self) -> Option<&str>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}]} />
+
+---
 
 
 
-## test_crate::DisplayDebug
+```rust
+pub trait DisplayDebug { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `format_both`
 
 
 
-## test_crate::Error
+<RustCode code={`pub struct Error;`} links={[]} />
 
-*Struct*
+### Methods
 
-**Methods:**
+<RustCode inline code={`fn new<impl Into<String>>(message: impl Trait) -> Self`} links={[{"text": "Into", "href": "https://doc.rust-lang.org/core/convert/struct.Into.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-- `fn new<impl Into<String>>(message: impl Trait) -> Self`
-- `fn message(self: &Self) -> &str`
+---
+
+<RustCode inline code={`fn message(self: &Self) -> &str`} links={[]} />
+
+---
 
 **Traits:** Error
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **Display**
-  - `fn fmt(self: &Self, f: & mut fmt::Formatter) -> fmt::Result`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Display
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
 
 
 
-## test_crate::GenericEnum
+<RustCode code={`pub enum GenericEnum<T, E> {
+    Ok(T),
+    Err(E),
+    None,
+}`} links={[]} />
 
-*Enum*
+### Generic Parameters
 
-**Generic Parameters:**
 - T
 - E
 
-**Variants:**
+### Variants
+
 - `Ok(T)`
 - `Err(E)`
 - `None`
 
-**Methods:**
+### Methods
 
-- `fn is_ok(self: &Self) -> bool`
-- `fn is_err(self: &Self) -> bool`
-- `fn ok(self: Self) -> Option<T>`
+<RustCode inline code={`fn is_ok(self: &Self) -> bool`} links={[]} />
 
-**Trait Implementations:**
+---
 
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **Clone**
-  - `fn clone(self: &Self) -> GenericEnum<T, E>`
+<RustCode inline code={`fn is_err(self: &Self) -> bool`} links={[]} />
+
+---
+
+<RustCode inline code={`fn ok(self: Self) -> Option<T>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}]} />
+
+---
+
+### Trait Implementations
+
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> GenericEnum<T, E>`} links={[{"text": "GenericEnum", "href": "/test_crate/enum.GenericEnum"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
 
 
 
 ## test_crate::GenericResult
 
-*Type Alias*: `std::result::Result<T, E>`
+*Type Alias*: `[Result](https://doc.rust-lang.org/std/result/enum.Result.html)<T, E>`
 
 
 
-## test_crate::GenericStruct
+<RustCode code={`pub struct GenericStruct<T, U> {
+    pub first: T,
+    pub second: U,
+}`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - T
 - U
 
-**Fields:**
-- `first: T`
-- `second: U`
+### Fields
 
-**Methods:**
+<RustCode inline code={`first: T`} links={[]} />
 
-- `fn new(first: T, second: U) -> Self`
-- `fn swap(self: Self) -> GenericStruct<U, T>`
-- `fn map_first<F, R>(self: Self, f: F) -> GenericStruct<R, U>`
-- `fn duplicate(self: &Self) -> (T, U)`
+<RustCode inline code={`second: U`} links={[]} />
 
-**Trait Implementations:**
 
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **Clone**
-  - `fn clone(self: &Self) -> GenericStruct<T, U>`
+### Methods
+
+<RustCode inline code={`fn duplicate(self: &Self) -> (T, U)`} links={[]} />
+
+---
+
+<RustCode inline code={`fn new(first: T, second: U) -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn swap(self: Self) -> GenericStruct<U, T>`} links={[{"text": "GenericStruct", "href": "/test_crate/struct.GenericStruct"}]} />
+
+---
+
+<RustCode inline code={`fn map_first<F, R>(self: Self, f: F) -> GenericStruct<R, U>`} links={[{"text": "GenericStruct", "href": "/test_crate/struct.GenericStruct"}]} />
+
+---
+
+### Trait Implementations
+
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> GenericStruct<T, U>`} links={[{"text": "GenericStruct", "href": "/test_crate/struct.GenericStruct"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
 
 
 
@@ -317,11 +393,11 @@ This crate contains `unsafe` code examples for documentation purposes only.
 
 
 
-## test_crate::MyTrait
+```rust
+pub trait MyTrait { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `required_method`
 - `provided_method`
@@ -329,83 +405,135 @@ This crate contains `unsafe` code examples for documentation purposes only.
 
 
 
-## test_crate::PlainStruct
+<RustCode code={`pub struct PlainStruct {
+    pub name: String,
+    pub value: i32,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
+### Fields
 
-**Fields:**
-- `name: String`
-- `value: i32`
+<RustCode inline code={`name: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-**Methods:**
+<RustCode inline code={`value: i32`} links={[]} />
 
-- `fn new(name: String, value: i32) -> Self`
-- `fn with_private(name: String, value: i32, private_field: bool) -> Self`
-- `fn get_value(self: &Self) -> i32`
-- `fn set_value(self: & mut Self, value: i32)`
+
+### Methods
+
+<RustCode inline code={`fn new(name: String, value: i32) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+<RustCode inline code={`fn with_private(name: String, value: i32, private_field: bool) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+<RustCode inline code={`fn get_value(self: &Self) -> i32`} links={[]} />
+
+---
+
+<RustCode inline code={`fn set_value(self: & mut Self, value: i32)`} links={[]} />
+
+---
 
 **Traits:** Eq
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **Clone**
-  - `fn clone(self: &Self) -> PlainStruct`
-- **PartialEq**
-  - `fn eq(self: &Self, other: &PlainStruct) -> bool`
-- **Default**
-  - `fn default() -> Self`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **MyTrait**
-  - `fn required_method(self: &Self) -> String`
-  - `fn provided_method(self: &Self) -> i32`
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> PlainStruct`} links={[{"text": "PlainStruct", "href": "/test_crate/struct.PlainStruct"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Default
+
+<RustCode inline code={`fn default() -> Self`} links={[]} />
+
+---
+
+#### MyTrait
+
+<RustCode inline code={`fn required_method(self: &Self) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+<RustCode inline code={`fn provided_method(self: &Self) -> i32`} links={[]} />
+
+---
+
+#### PartialEq
+
+<RustCode inline code={`fn eq(self: &Self, other: &PlainStruct) -> bool`} links={[{"text": "PlainStruct", "href": "/test_crate/struct.PlainStruct"}]} />
+
+---
 
 
 
 ## test_crate::Result
 
-*Type Alias*: `std::result::Result<T, Error>`
+*Type Alias*: `[Result](https://doc.rust-lang.org/std/result/enum.Result.html)<T, [Error](/test_crate/struct.Error)>`
 
 
 
-## test_crate::SimpleEnum
+<RustCode code={`pub enum SimpleEnum {
+    VariantA,
+    VariantB,
+    VariantC,
+}`} links={[]} />
 
-*Enum*
+### Variants
 
-**Variants:**
 - `VariantA`
 - `VariantB`
 - `VariantC`
 
-**Methods:**
+### Methods
 
-- `fn default_variant() -> Self`
-- `fn is_variant_a(self: &Self) -> bool`
+<RustCode inline code={`fn default_variant() -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn is_variant_a(self: &Self) -> bool`} links={[]} />
+
+---
 
 **Traits:** Eq
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **PartialEq**
-  - `fn eq(self: &Self, other: &SimpleEnum) -> bool`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **Clone**
-  - `fn clone(self: &Self) -> SimpleEnum`
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> SimpleEnum`} links={[{"text": "SimpleEnum", "href": "/test_crate/enum.SimpleEnum"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### PartialEq
+
+<RustCode inline code={`fn eq(self: &Self, other: &SimpleEnum) -> bool`} links={[{"text": "SimpleEnum", "href": "/test_crate/enum.SimpleEnum"}]} />
+
+---
 
 
 
-## test_crate::TupleStruct
+<RustCode code={`pub struct TupleStruct(pub String, pub i32);`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
-
-**Tuple Struct**: `(String, i32)`
+**Tuple Struct**: `([String](https://doc.rust-lang.org/alloc/string/struct.String.html), i32)`
 
 
 
-## test_crate::UnitStruct
-
-*Struct*
+<RustCode code={`pub struct UnitStruct;`} links={[]} />
 
 **Unit Struct**
 
@@ -421,13 +549,9 @@ This crate contains `unsafe` code examples for documentation purposes only.
 
 
 
-## test_crate::const_function
-
 *Function*
 
-```rust
-fn const_function(x: i32) -> i32
-```
+<RustCode code={`fn const_function(x: i32) -> i32`} links={[]} />
 
 
 
@@ -435,23 +559,15 @@ fn const_function(x: i32) -> i32
 
 
 
-## test_crate::function_with_args
+*Function*
+
+<RustCode code={`fn function_with_args(name: &str, value: i32) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+
 
 *Function*
 
-```rust
-fn function_with_args(name: &str, value: i32) -> String
-```
-
-
-
-## test_crate::function_with_result
-
-*Function*
-
-```rust
-fn function_with_result(value: i32) -> Result<String>
-```
+<RustCode code={`fn function_with_result(value: i32) -> Result<String>`} links={[{"text": "Result", "href": "/test_crate/type.Result"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
 
@@ -469,13 +585,9 @@ This module shows:
 
 
 
-## test_crate::generic_function
-
 *Function*
 
-```rust
-fn generic_function<T>(item: T) -> String
-```
+<RustCode code={`fn generic_function<T>(item: T) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
 
@@ -483,13 +595,9 @@ fn generic_function<T>(item: T) -> String
 
 
 
-## test_crate::multiple_bounds
-
 *Function*
 
-```rust
-fn multiple_bounds<T>(item: T) -> String
-```
+<RustCode code={`fn multiple_bounds<T>(item: T) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
 
@@ -505,13 +613,9 @@ This shows how documentation is structured for deeply nested modules.
 
 
 
-## test_crate::simple_function
-
 *Function*
 
-```rust
-fn simple_function()
-```
+<RustCode code={`fn simple_function()`} links={[]} />
 
 
 
@@ -531,8 +635,6 @@ This module demonstrates various type definitions including:
 
 
 
-## test_crate::unsafe_function
-
 *Function*
 
 An unsafe function that dereferences a raw pointer.
@@ -542,9 +644,7 @@ An unsafe function that dereferences a raw pointer.
 The caller must ensure that `ptr` is valid, properly aligned,
 and points to initialized memory.
 
-```rust
-fn unsafe_function(ptr: *const u8) -> u8
-```
+<RustCode code={`fn unsafe_function(ptr: *const u8) -> u8`} links={[]} />
 
 
 
@@ -552,105 +652,98 @@ fn unsafe_function(ptr: *const u8) -> u8
 
 # Module: `test_crate::async_example`
 
-## test_crate::async_example::AsyncCounter
+<RustCode code={`pub struct AsyncCounter;`} links={[]} />
 
-*Struct*
+### Methods
 
-**Methods:**
+<RustCode inline code={`fn new(max: usize) -> Self`} links={[]} />
 
-- `fn new(max: usize) -> Self`
+---
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **AsyncIterator**
-  - `fn next(self: & mut Self) -> Option<<Self as >::Item>`
+#### AsyncIterator
+
+<RustCode inline code={`fn next(self: & mut Self) -> Option<<Self as >::Item>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}, {"text": "", "href": "/test_crate/async_example/trait.AsyncIterator"}]} />
+
+---
 
 
 
-## test_crate::async_example::AsyncIterator
+```rust
+pub trait AsyncIterator { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `Item`
 - `next`
 
 
 
-## test_crate::async_example::AsyncStruct
+<RustCode code={`pub struct AsyncStruct {
+    pub data: String,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
+### Fields
 
-**Fields:**
-- `data: String`
-
-**Methods:**
-
-- `fn async_new(data: String) -> Self`
-- `fn process(self: &Self) -> Result<String, String>`
-- `fn fetch(self: &Self, url: &str) -> Result<Vec<u8>, String>`
+<RustCode inline code={`data: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
+### Methods
 
-## test_crate::async_example::AsyncTrait
+<RustCode inline code={`fn async_new(data: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Trait*
+---
 
-**Methods:**
+<RustCode inline code={`fn process(self: &Self) -> Result<String, String>`} links={[{"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+<RustCode inline code={`fn fetch(self: &Self, url: &str) -> Result<Vec<u8>, String>`} links={[{"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+
+
+```rust
+pub trait AsyncTrait { /* ... */ }
+```
+
+### Methods
 
 - `async_method`
 - `async_with_default`
 
 
 
-## test_crate::async_example::async_with_args
+*Function*
+
+<RustCode code={`fn async_with_args(name: &str, count: usize) -> Vec<String>`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+
 
 *Function*
 
-```rust
-fn async_with_args(name: &str, count: usize) -> Vec<String>
-```
+<RustCode code={`fn boxed_future() -> Pin<Box<dyn Future>>`} links={[{"text": "Pin", "href": "https://doc.rust-lang.org/core/pin/struct.Pin.html"}, {"text": "Box", "href": "https://doc.rust-lang.org/alloc/boxed/struct.Box.html"}, {"text": "Future", "href": "https://doc.rust-lang.org/core/future/future/struct.Future.html"}]} />
 
 
-
-## test_crate::async_example::boxed_future
 
 *Function*
 
-```rust
-fn boxed_future() -> std::pin::Pin<Box<dyn Future>>
-```
+<RustCode code={`fn generic_async<T>(item: T) -> T`} links={[]} />
 
 
-
-## test_crate::async_example::generic_async
 
 *Function*
 
-```rust
-fn generic_async<T>(item: T) -> T
-```
+<RustCode code={`fn returns_future() -> impl Trait`} links={[{"text": "Future", "href": "https://doc.rust-lang.org/core/future/future/struct.Future.html"}]} />
 
 
-
-## test_crate::async_example::returns_future
 
 *Function*
 
-```rust
-fn returns_future() -> impl Trait
-```
-
-
-
-## test_crate::async_example::simple_async
-
-*Function*
-
-```rust
-fn simple_async() -> String
-```
+<RustCode code={`fn simple_async() -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
 
@@ -658,56 +751,95 @@ fn simple_async() -> String
 
 # Module: `test_crate::errors`
 
-## test_crate::errors::CustomError
+<RustCode code={`pub enum CustomError {
+    NotFound,
+    InvalidInput { field: String, reason: String },
+    Io(Error),
+    Parse(String),
+    Multiple(Vec<CustomError>),
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Error", "href": "https://doc.rust-lang.org/std/io/error/enum.Error.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "CustomError", "href": "/test_crate/errors/enum.CustomError"}]} />
 
-*Enum*
+### Variants
 
-**Variants:**
 - `NotFound`
 - `InvalidInput{ field: String, reason: String }`
-- `Io(io::Error)`
+- `Io(Error)`
 - `Parse(String)`
 - `Multiple(Vec<CustomError>)`
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **From**
-  - `fn from(error: io::Error) -> Self`
-- **Display**
-  - `fn fmt(self: &Self, f: & mut fmt::Formatter) -> fmt::Result`
-- **From**
-  - `fn from(error: String) -> Self`
-- **Error**
-  - `fn source(self: &Self) -> Option<&dyn StdError>`
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Display
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Error
+
+<RustCode inline code={`fn source(self: &Self) -> Option<&dyn StdError>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}, {"text": "StdError", "href": "https://doc.rust-lang.org/core/error/enum.Error.html"}]} />
+
+---
+
+#### From
+
+<RustCode inline code={`fn from(error: Error) -> Self`} links={[{"text": "Error", "href": "https://doc.rust-lang.org/std/io/error/enum.Error.html"}]} />
+
+---
+
+#### From
+
+<RustCode inline code={`fn from(error: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
 
 
 
-## test_crate::errors::ErrorContext
+<RustCode code={`pub struct ErrorContext {
+    pub error: CustomError,
+    pub context: String,
+}`} links={[{"text": "CustomError", "href": "/test_crate/errors/enum.CustomError"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
+### Fields
 
-**Fields:**
-- `error: CustomError`
-- `context: String`
+<RustCode inline code={`error: CustomError`} links={[{"text": "CustomError", "href": "/test_crate/errors/enum.CustomError"}]} />
 
-**Trait Implementations:**
-
-- **Error**
-  - `fn source(self: &Self) -> Option<&dyn StdError>`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **Display**
-  - `fn fmt(self: &Self, f: & mut fmt::Formatter) -> fmt::Result`
+<RustCode inline code={`context: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
+### Trait Implementations
 
-## test_crate::errors::IntoContext
+#### Debug
 
-*Trait*
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
 
-**Methods:**
+---
+
+#### Display
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Error
+
+<RustCode inline code={`fn source(self: &Self) -> Option<&dyn StdError>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}, {"text": "StdError", "href": "https://doc.rust-lang.org/core/error/enum.Error.html"}]} />
+
+---
+
+
+
+```rust
+pub trait IntoContext { /* ... */ }
+```
+
+### Methods
 
 - `context`
 
@@ -715,45 +847,31 @@ fn simple_async() -> String
 
 ## test_crate::errors::Result
 
-*Type Alias*: `std::result::Result<T, CustomError>`
+*Type Alias*: `[Result](https://doc.rust-lang.org/std/result/enum.Result.html)<T, [CustomError](/test_crate/errors/enum.CustomError)>`
 
 
-
-## test_crate::errors::chain_errors
 
 *Function*
 
-```rust
-fn chain_errors() -> Result<String>
-```
+<RustCode code={`fn chain_errors() -> Result<String>`} links={[{"text": "Result", "href": "/test_crate/errors/type.Result"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
-
-## test_crate::errors::fallible_operation
 
 *Function*
 
-```rust
-fn fallible_operation() -> Result<String>
-```
+<RustCode code={`fn fallible_operation() -> Result<String>`} links={[{"text": "Result", "href": "/test_crate/errors/type.Result"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
-
-## test_crate::errors::operation_with_context
 
 *Function*
 
-```rust
-fn operation_with_context(value: i32) -> Result<String>
-```
+<RustCode code={`fn operation_with_context(value: i32) -> Result<String>`} links={[{"text": "Result", "href": "/test_crate/errors/type.Result"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
 
 ---
 
 # Module: `test_crate::functions`
-
-## test_crate::functions::add
 
 *Function*
 
@@ -767,13 +885,9 @@ use test_crate::functions::add;
 assert_eq!(add(2, 3), 5);
 ```
 
-```rust
-fn add(a: i32, b: i32) -> i32
-```
+<RustCode code={`fn add(a: i32, b: i32) -> i32`} links={[]} />
 
 
-
-## test_crate::functions::async_function
 
 *Function*
 
@@ -798,25 +912,17 @@ assert!(result.is_ok());
 # }
 ```
 
-```rust
-fn async_function(url: &str) -> Result<String, String>
-```
+<RustCode code={`fn async_function(url: &str) -> Result<String, String>`} links={[{"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
-
-## test_crate::functions::complex_generics
 
 *Function*
 
 A function that takes multiple generic parameters with different bounds.
 
-```rust
-fn complex_generics<T, U, V>(t: T, u: U, _v: V) -> String
-```
+<RustCode code={`fn complex_generics<T, U, V>(t: T, u: U, _v: V) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
-
-## test_crate::functions::const_function
 
 *Function*
 
@@ -831,25 +937,17 @@ const VALUE: i32 = const_function(21);
 assert_eq!(VALUE, 42);
 ```
 
-```rust
-fn const_function(x: i32) -> i32
-```
+<RustCode code={`fn const_function(x: i32) -> i32`} links={[]} />
 
 
-
-## test_crate::functions::filter
 
 *Function*
 
 Filters a slice based on a predicate.
 
-```rust
-fn filter<T, F>(slice: &[T], predicate: F) -> Vec<&T>
-```
+<RustCode code={`fn filter<T, F>(slice: &[T], predicate: F) -> Vec<&T>`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}]} />
 
 
-
-## test_crate::functions::for_each
 
 *Function*
 
@@ -860,13 +958,36 @@ Applies a closure to each element in a slice.
 * `T` - The type of elements in the slice
 * `F` - The closure type
 
-```rust
-fn for_each<T, F>(slice: &[T], f: F)
-```
+<RustCode code={`fn for_each<T, F>(slice: &[T], f: F)`} links={[]} />
 
 
 
-## test_crate::functions::higher_order_function
+*Function*
+
+A function with a very long signature that should be formatted on multiple lines.
+ 
+This function demonstrates how multi-line signatures are rendered in the documentation.
+It takes many parameters with complex types to trigger the multi-line formatting.
+ 
+# Arguments
+ 
+* `user_id` - The unique identifier for the user
+* `session_data` - A map containing session information
+* `config_options` - A vector of configuration key-value pairs
+* `timeout_seconds` - The timeout duration in seconds
+ 
+# Returns
+ 
+A Result containing a HashMap with processed data or an error message
+
+<RustCode code={`fn function_with_very_long_signature(
+    user_id: u64,
+    session_data: HashMap<String, String>,
+    config_options: Vec<(String, String)>,
+    timeout_seconds: u64
+) -> Result<HashMap<String, Vec<u8>>, String>`} links={[{"text": "HashMap", "href": "https://doc.rust-lang.org/std/collections/hash/map/struct.HashMap.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "HashMap", "href": "https://doc.rust-lang.org/std/collections/hash/map/struct.HashMap.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+
 
 *Function*
 
@@ -880,25 +1001,17 @@ A higher-order function that applies a function to a value.
 
 The result of calling `f(42)`.
 
-```rust
-fn higher_order_function<F>(f: F) -> i32
-```
+<RustCode code={`fn higher_order_function<F>(f: F) -> i32`} links={[]} />
 
 
-
-## test_crate::functions::map
 
 *Function*
 
 Maps a slice to a new vector using a closure.
 
-```rust
-fn map<T, U, F>(slice: &[T], f: F) -> Vec<U>
-```
+<RustCode code={`fn map<T, U, F>(slice: &[T], f: F) -> Vec<U>`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}]} />
 
 
-
-## test_crate::functions::multiply
 
 *Function*
 
@@ -911,13 +1024,9 @@ the multiplication operator.
 
 * `T` - A type that implements `Mul` and `Copy`
 
-```rust
-fn multiply<T>(a: T, b: T) -> T
-```
+<RustCode code={`fn multiply<T>(a: T, b: T) -> T`} links={[]} />
 
 
-
-## test_crate::functions::process_mut_slice
 
 *Function*
 
@@ -929,13 +1038,9 @@ Each byte is incremented by 1 (with wrapping).
 
 * `data` - A mutable reference to the byte slice
 
-```rust
-fn process_mut_slice(data: & mut [u8])
-```
+<RustCode code={`fn process_mut_slice(data: & mut [u8])`} links={[]} />
 
 
-
-## test_crate::functions::process_slice
 
 *Function*
 
@@ -949,13 +1054,9 @@ Processes a byte slice and returns a new vector.
 
 A new `Vec<u8>` containing a copy of the input data.
 
-```rust
-fn process_slice(data: &[u8]) -> Vec<u8>
-```
+<RustCode code={`fn process_slice(data: &[u8]) -> Vec<u8>`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}]} />
 
 
-
-## test_crate::functions::unsafe_function
 
 *Function*
 
@@ -969,9 +1070,7 @@ The caller must ensure that `ptr` is valid and properly aligned.
 
 * `ptr` - A raw pointer to a `u8`
 
-```rust
-fn unsafe_function(ptr: *const u8) -> u8
-```
+<RustCode code={`fn unsafe_function(ptr: *const u8) -> u8`} links={[]} />
 
 
 
@@ -979,126 +1078,148 @@ fn unsafe_function(ptr: *const u8) -> u8
 
 # Module: `test_crate::lifetimes`
 
-## test_crate::lifetimes::BorrowedData
+<RustCode code={`pub struct BorrowedData<'a> {
+    pub data: &'a str,
+    pub metadata: &'a [u8],
+}`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - 'a
 
-**Fields:**
-- `data: &'a str`
-- `metadata: &'a [u8]`
+### Fields
 
-**Methods:**
+<RustCode inline code={`data: &'a str`} links={[]} />
 
-- `fn new(data: &'a str, metadata: &'a [u8]) -> Self`
-- `fn get_data(self: &Self) -> &'a str`
+<RustCode inline code={`metadata: &'a [u8]`} links={[]} />
 
 
+### Methods
 
-## test_crate::lifetimes::DoubleBorrow
+<RustCode inline code={`fn new(data: &'a str, metadata: &'a [u8]) -> Self`} links={[]} />
 
-*Struct*
+---
 
-**Generic Parameters:**
+<RustCode inline code={`fn get_data(self: &Self) -> &'a str`} links={[]} />
+
+---
+
+
+
+<RustCode code={`pub struct DoubleBorrow<'a, 'b> {
+    pub first: &'a str,
+    pub second: &'b str,
+}`} links={[]} />
+
+### Generic Parameters
+
 - 'a
 - 'b
 
-**Fields:**
-- `first: &'a str`
-- `second: &'b str`
+### Fields
+
+<RustCode inline code={`first: &'a str`} links={[]} />
+
+<RustCode inline code={`second: &'b str`} links={[]} />
 
 
 
-## test_crate::lifetimes::LifetimeEnum
 
-*Enum*
+<RustCode code={`pub enum LifetimeEnum<'a> {
+    Borrowed(&'a str),
+    Owned(String),
+    Multiple { first: &'a str, second: &'a [u8] },
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-**Generic Parameters:**
+### Generic Parameters
+
 - 'a
 
-**Variants:**
+### Variants
+
 - `Borrowed(&'a str)`
 - `Owned(String)`
 - `Multiple{ first: &'a str, second: &'a [u8] }`
 
 
 
-## test_crate::lifetimes::LifetimeStruct
+<RustCode code={`pub struct LifetimeStruct<'a, T> {
+    pub data: &'a T,
+    pub name: String,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - 'a
 - T
 
-**Fields:**
-- `data: &'a T`
-- `name: String`
+### Fields
 
-**Methods:**
+<RustCode inline code={`data: &'a T`} links={[]} />
 
-- `fn new(data: &'a T, name: String) -> Self`
-- `fn clone_data(self: &Self) -> T`
+<RustCode inline code={`name: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
+### Methods
 
-## test_crate::lifetimes::LifetimeTrait
+<RustCode inline code={`fn new(data: &'a T, name: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Trait*
+---
 
-**Methods:**
+<RustCode inline code={`fn clone_data(self: &Self) -> T`} links={[]} />
+
+---
+
+
+
+```rust
+pub trait LifetimeTrait { /* ... */ }
+```
+
+### Methods
 
 - `Output`
 - `process`
 
 
 
-## test_crate::lifetimes::LifetimeWithBound
+<RustCode code={`pub struct LifetimeWithBound<'a, T> {
+    pub reference: &'a T,
+}`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - 'a
 - T
 
-**Fields:**
-- `reference: &'a T`
+### Fields
 
-**Methods:**
-
-- `fn display(self: &Self) -> String`
+<RustCode inline code={`reference: &'a T`} links={[]} />
 
 
+### Methods
 
-## test_crate::lifetimes::higher_ranked_trait_bound
+<RustCode inline code={`fn display(self: &Self) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+
 
 *Function*
 
-```rust
-fn higher_ranked_trait_bound<F>(f: F) -> String
-```
+<RustCode code={`fn higher_ranked_trait_bound<F>(f: F) -> String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
-
-## test_crate::lifetimes::lifetime_function
 
 *Function*
 
-```rust
-fn lifetime_function<'a>(x: &'a str, y: &'a str) -> &'a str
-```
+<RustCode code={`fn lifetime_function<'a>(x: &'a str, y: &'a str) -> &'a str`} links={[]} />
 
 
-
-## test_crate::lifetimes::multiple_lifetimes
 
 *Function*
 
-```rust
-fn multiple_lifetimes<'a, 'b>(x: &'a str, _y: &'b str) -> &'a str
-```
+<RustCode code={`fn multiple_lifetimes<'a, 'b>(x: &'a str, _y: &'b str) -> &'a str`} links={[]} />
 
 
 
@@ -1106,19 +1227,30 @@ fn multiple_lifetimes<'a, 'b>(x: &'a str, _y: &'b str) -> &'a str
 
 # Module: `test_crate::nested`
 
-## test_crate::nested::OuterStruct
-
-*Struct*
+<RustCode code={`pub struct OuterStruct {
+    pub inner: InnerStruct,
+}`} links={[{"text": "InnerStruct", "href": "/test_crate/nested/inner/struct.InnerStruct"}]} />
 
 An outer struct that contains an inner struct.
 
-**Fields:**
-- `inner: inner::InnerStruct`
+### Fields
 
-**Methods:**
+<RustCode inline code={`inner: InnerStruct`} links={[{"text": "InnerStruct", "href": "/test_crate/nested/inner/struct.InnerStruct"}]} />
 
-- `fn new(value: i32) -> Self` - Creates a new `OuterStruct`.
-- `fn get_value(self: &Self) -> i32` - Gets the inner value.
+
+### Methods
+
+<RustCode inline code={`fn new(value: i32) -> Self`} links={[]} />
+
+Creates a new `OuterStruct`.
+
+---
+
+<RustCode inline code={`fn get_value(self: &Self) -> i32`} links={[]} />
+
+Gets the inner value.
+
+---
 
 
 
@@ -1128,23 +1260,41 @@ Inner module with its own types and functions.
 
 
 
+## Module: reexport_test
+
+Module that demonstrates glob re-exports (pub use module::*).
+This should generate duplicate documentation like rustdoc does.
+
+
+
 ---
 
 # Module: `test_crate::nested::inner`
 
-## test_crate::nested::inner::InnerStruct
-
-*Struct*
+<RustCode code={`pub struct InnerStruct {
+    pub value: i32,
+}`} links={[]} />
 
 A struct defined in the inner module.
 
-**Fields:**
-- `value: i32`
+### Fields
 
-**Methods:**
+<RustCode inline code={`value: i32`} links={[]} />
 
-- `fn new(value: i32) -> Self` - Creates a new `InnerStruct`.
-- `fn double(self: & mut Self)` - Doubles the value.
+
+### Methods
+
+<RustCode inline code={`fn new(value: i32) -> Self`} links={[]} />
+
+Creates a new `InnerStruct`.
+
+---
+
+<RustCode inline code={`fn double(self: & mut Self)`} links={[]} />
+
+Doubles the value.
+
+---
 
 
 
@@ -1154,15 +1304,11 @@ Deeply nested module.
 
 
 
-## test_crate::nested::inner::inner_function
-
 *Function*
 
 A function in the inner module.
 
-```rust
-fn inner_function() -> &'static str
-```
+<RustCode code={`fn inner_function() -> &'static str`} links={[]} />
 
 
 
@@ -1170,32 +1316,44 @@ fn inner_function() -> &'static str
 
 # Module: `test_crate::nested::inner::deep`
 
-## test_crate::nested::inner::deep::DeepStruct
-
-*Struct*
+<RustCode code={`pub struct DeepStruct {
+    pub data: String,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 A struct in the deeply nested module.
 
-**Fields:**
-- `data: String`
+### Fields
 
-**Methods:**
-
-- `fn new(data: String) -> Self` - Creates a new `DeepStruct`.
-- `fn len(self: &Self) -> usize` - Returns the length of the data.
-- `fn is_empty(self: &Self) -> bool` - Returns `true` if the data is empty.
+<RustCode inline code={`data: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 
+### Methods
 
-## test_crate::nested::inner::deep::deep_function
+<RustCode inline code={`fn new(data: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+Creates a new `DeepStruct`.
+
+---
+
+<RustCode inline code={`fn len(self: &Self) -> usize`} links={[]} />
+
+Returns the length of the data.
+
+---
+
+<RustCode inline code={`fn is_empty(self: &Self) -> bool`} links={[]} />
+
+Returns `true` if the data is empty.
+
+---
+
+
 
 *Function*
 
 A function in the deeply nested module.
 
-```rust
-fn deep_function() -> i32
-```
+<RustCode code={`fn deep_function() -> i32`} links={[]} />
 
 
 
@@ -1209,17 +1367,119 @@ Even deeper nesting.
 
 # Module: `test_crate::nested::inner::deep::deeper`
 
-## test_crate::nested::inner::deep::deeper::DeeperStruct
-
-*Struct*
+<RustCode code={`pub struct DeeperStruct;`} links={[]} />
 
 The deepest struct.
 
 **Unit Struct**
 
-**Methods:**
+### Methods
 
-- `fn greet() -> &'static str` - Returns a greeting from the depths.
+<RustCode inline code={`fn greet() -> &'static str`} links={[]} />
+
+Returns a greeting from the depths.
+
+---
+
+
+
+---
+
+# Module: `test_crate::nested::reexport_test`
+
+<RustCode code={`pub enum GlobEnum {
+    Variant1,
+    Variant2(i32),
+}`} links={[]} />
+
+An enum that will be re-exported via glob.
+
+### Variants
+
+- `Variant1` - First variant.
+- `Variant2(i32)` - Second variant with data.
+
+
+
+<RustCode code={`pub struct GlobStruct {
+    pub field: String,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+A struct that will be re-exported via glob.
+
+### Fields
+
+<RustCode inline code={`field: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+
+### Methods
+
+<RustCode inline code={`fn new(field: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+Creates a new GlobStruct.
+
+---
+
+
+
+*Function*
+
+A function that will be re-exported via glob.
+
+<RustCode code={`fn glob_function() -> &'static str`} links={[]} />
+
+
+
+## Module: items
+
+Items that will be glob re-exported.
+
+
+
+---
+
+# Module: `test_crate::nested::reexport_test::items`
+
+<RustCode code={`pub enum GlobEnum {
+    Variant1,
+    Variant2(i32),
+}`} links={[]} />
+
+An enum that will be re-exported via glob.
+
+### Variants
+
+- `Variant1` - First variant.
+- `Variant2(i32)` - Second variant with data.
+
+
+
+<RustCode code={`pub struct GlobStruct {
+    pub field: String,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+A struct that will be re-exported via glob.
+
+### Fields
+
+<RustCode inline code={`field: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+
+### Methods
+
+<RustCode inline code={`fn new(field: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+Creates a new GlobStruct.
+
+---
+
+
+
+*Function*
+
+A function that will be re-exported via glob.
+
+<RustCode code={`fn glob_function() -> &'static str`} links={[]} />
 
 
 
@@ -1227,143 +1487,234 @@ The deepest struct.
 
 # Module: `test_crate::patterns`
 
-## test_crate::patterns::Builder
+<RustCode code={`pub struct Builder;`} links={[]} />
 
-*Struct*
+### Methods
 
-**Methods:**
+<RustCode inline code={`fn new() -> Self`} links={[]} />
 
-- `fn new() -> Self`
-- `fn name(self: Self, name: String) -> Self`
-- `fn value(self: Self, value: i32) -> Self`
-- `fn enabled(self: Self, enabled: bool) -> Self`
-- `fn build(self: Self) -> Result<Built, &'static str>`
+---
 
-**Trait Implementations:**
+<RustCode inline code={`fn name(self: Self, name: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-- **Clone**
-  - `fn clone(self: &Self) -> Builder`
-- **Default**
-  - `fn default() -> Self`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+---
+
+<RustCode inline code={`fn value(self: Self, value: i32) -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn enabled(self: Self, enabled: bool) -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn build(self: Self) -> Result<Built, &'static str>`} links={[{"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "Built", "href": "/test_crate/patterns/struct.Built"}]} />
+
+---
+
+### Trait Implementations
+
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> Builder`} links={[{"text": "Builder", "href": "/test_crate/patterns/struct.Builder"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Default
+
+<RustCode inline code={`fn default() -> Self`} links={[]} />
+
+---
 
 
 
-## test_crate::patterns::Built
+<RustCode code={`pub struct Built {
+    pub name: String,
+    pub value: i32,
+    pub enabled: bool,
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-*Struct*
+### Fields
 
-**Fields:**
-- `name: String`
-- `value: i32`
-- `enabled: bool`
+<RustCode inline code={`name: String`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
-**Trait Implementations:**
+<RustCode inline code={`value: i32`} links={[]} />
 
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+<RustCode inline code={`enabled: bool`} links={[]} />
 
 
+### Trait Implementations
 
-## test_crate::patterns::Closed
+#### Debug
 
-*Struct*
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+
+
+<RustCode code={`pub struct Closed;`} links={[]} />
 
 **Unit Struct**
 
 
 
-## test_crate::patterns::Handle
+<RustCode code={`pub struct Handle<T>;`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - T
 
-**Methods:**
+### Methods
 
-- `fn new(value: T) -> Self`
-- `fn get(self: &Self) -> &T`
-- `fn get_mut(self: & mut Self) -> & mut T`
-- `fn into_inner(self: Self) -> T`
+<RustCode inline code={`fn new(value: T) -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn get(self: &Self) -> &T`} links={[]} />
+
+---
+
+<RustCode inline code={`fn get_mut(self: & mut Self) -> & mut T`} links={[]} />
+
+---
+
+<RustCode inline code={`fn into_inner(self: Self) -> T`} links={[]} />
+
+---
 
 
 
-## test_crate::patterns::Newtype
-
-*Struct*
+<RustCode code={`pub struct Newtype(pub u64);`} links={[]} />
 
 **Tuple Struct**: `(u64)`
 
-**Methods:**
+### Methods
 
-- `fn new(value: u64) -> Self`
-- `fn inner(self: &Self) -> u64`
+<RustCode inline code={`fn new(value: u64) -> Self`} links={[]} />
+
+---
+
+<RustCode inline code={`fn inner(self: &Self) -> u64`} links={[]} />
+
+---
 
 **Traits:** Eq, Copy
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **PartialOrd**
-  - `fn partial_cmp(self: &Self, other: &Newtype) -> $crate::option::Option<$crate::cmp::Ordering>`
-- **PartialEq**
-  - `fn eq(self: &Self, other: &Newtype) -> bool`
-- **Clone**
-  - `fn clone(self: &Self) -> Newtype`
-- **Hash**
-  - `fn hash<__H>(self: &Self, state: & mut __H)`
-- **Ord**
-  - `fn cmp(self: &Self, other: &Newtype) -> $crate::cmp::Ordering`
-- **From**
-  - `fn from(value: u64) -> Self`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> Newtype`} links={[{"text": "Newtype", "href": "/test_crate/patterns/struct.Newtype"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### From
+
+<RustCode inline code={`fn from(value: u64) -> Self`} links={[]} />
+
+---
+
+#### Hash
+
+<RustCode inline code={`fn hash<__H>(self: &Self, state: & mut __H)`} links={[]} />
+
+---
+
+#### Ord
+
+<RustCode inline code={`fn cmp(self: &Self, other: &Newtype) -> Ordering`} links={[{"text": "Newtype", "href": "/test_crate/patterns/struct.Newtype"}, {"text": "Ordering", "href": "https://doc.rust-lang.org/core/cmp/struct.Ordering.html"}]} />
+
+---
+
+#### PartialEq
+
+<RustCode inline code={`fn eq(self: &Self, other: &Newtype) -> bool`} links={[{"text": "Newtype", "href": "/test_crate/patterns/struct.Newtype"}]} />
+
+---
+
+#### PartialOrd
+
+<RustCode inline code={`fn partial_cmp(self: &Self, other: &Newtype) -> Option<Ordering>`} links={[{"text": "Newtype", "href": "/test_crate/patterns/struct.Newtype"}, {"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}, {"text": "Ordering", "href": "https://doc.rust-lang.org/core/cmp/struct.Ordering.html"}]} />
+
+---
 
 
 
-## test_crate::patterns::Open
-
-*Struct*
+<RustCode code={`pub struct Open;`} links={[]} />
 
 **Unit Struct**
 
 
 
-## test_crate::patterns::TypeState
+<RustCode code={`pub struct TypeState<State>;`} links={[]} />
 
-*Struct*
+### Generic Parameters
 
-**Generic Parameters:**
 - State
 
-**Methods:**
+### Methods
 
-- `fn open(self: Self) -> TypeState<Open>`
-- `fn data(self: &Self) -> &str`
-- `fn new(data: String) -> Self`
-- `fn close(self: Self) -> TypeState<Closed>`
+<RustCode inline code={`fn open(self: Self) -> TypeState<Open>`} links={[{"text": "TypeState", "href": "/test_crate/patterns/struct.TypeState"}, {"text": "Open", "href": "/test_crate/patterns/struct.Open"}]} />
+
+---
+
+<RustCode inline code={`fn data(self: &Self) -> &str`} links={[]} />
+
+---
+
+<RustCode inline code={`fn new(data: String) -> Self`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+---
+
+<RustCode inline code={`fn close(self: Self) -> TypeState<Closed>`} links={[{"text": "TypeState", "href": "/test_crate/patterns/struct.TypeState"}, {"text": "Closed", "href": "/test_crate/patterns/struct.Closed"}]} />
+
+---
 
 
 
-## test_crate::patterns::Visitor
-
-*Struct*
+<RustCode code={`pub struct Visitor;`} links={[]} />
 
 **Unit Struct**
 
-**Methods:**
+### Methods
 
-- `fn visit_string(self: &Self, _s: &str)`
-- `fn visit_number(self: &Self, _n: i32)`
-- `fn visit_bool(self: &Self, _b: bool)`
+<RustCode inline code={`fn visit_string(self: &Self, _s: &str)`} links={[]} />
 
-**Trait Implementations:**
+---
 
-- **Clone**
-  - `fn clone(self: &Self) -> Visitor`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+<RustCode inline code={`fn visit_number(self: &Self, _n: i32)`} links={[]} />
+
+---
+
+<RustCode inline code={`fn visit_bool(self: &Self, _b: bool)`} links={[]} />
+
+---
+
+### Trait Implementations
+
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> Visitor`} links={[{"text": "Visitor", "href": "/test_crate/patterns/struct.Visitor"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
 
 
 
@@ -1371,45 +1722,46 @@ The deepest struct.
 
 # Module: `test_crate::traits`
 
-## test_crate::traits::Associated
+```rust
+pub trait Associated { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `Assoc`
 - `get_assoc`
 
 
 
-## test_crate::traits::AssociatedImpl
-
-*Struct*
+<RustCode code={`pub struct AssociatedImpl;`} links={[]} />
 
 **Unit Struct**
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **Associated**
-  - `fn get_assoc(self: &Self) -> <Self as >::Assoc`
+#### Associated
+
+<RustCode inline code={`fn get_assoc(self: &Self) -> <Self as >::Assoc`} links={[{"text": "", "href": "/test_crate/traits/trait.Associated"}]} />
+
+---
 
 
 
-## test_crate::traits::ComplexBounds
+```rust
+pub trait ComplexBounds { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `process`
 
 
 
-## test_crate::traits::Converter
+```rust
+pub trait Converter { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `Input`
 - `Output`
@@ -1420,61 +1772,61 @@ The deepest struct.
 
 
 
-## test_crate::traits::DefaultImpl
+```rust
+pub trait DefaultImpl { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `has_default`
 
 
 
-## test_crate::traits::Display
+```rust
+pub trait Display { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `fmt`
 
 
 
-## test_crate::traits::ExtensionTrait
+```rust
+pub trait ExtensionTrait { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `extension_method`
 
 
 
-## test_crate::traits::FromIterator
+```rust
+pub trait FromIterator { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `from_iter`
 
 
 
-## test_crate::traits::GenericTrait
+```rust
+pub trait GenericTrait { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `method`
 
 
 
-## test_crate::traits::Iterator
+```rust
+pub trait Iterator { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `Item`
 - `next`
@@ -1483,15 +1835,13 @@ The deepest struct.
 
 
 
-## test_crate::traits::Sealed
+```rust
+pub trait Sealed { /* ... */ }
+```
 
-*Trait*
 
 
-
-## test_crate::traits::SealedType
-
-*Struct*
+<RustCode code={`pub struct SealedType;`} links={[]} />
 
 **Unit Struct**
 
@@ -1499,11 +1849,11 @@ The deepest struct.
 
 
 
-## test_crate::traits::SuperTrait
+```rust
+pub trait SuperTrait { /* ... */ }
+```
 
-*Trait*
-
-**Methods:**
+### Methods
 
 - `super_method`
 
@@ -1513,9 +1863,9 @@ The deepest struct.
 
 # Module: `test_crate::traits::private`
 
-## test_crate::traits::private::SealedTrait
-
-*Trait*
+```rust
+pub trait SealedTrait { /* ... */ }
+```
 
 
 
@@ -1523,9 +1873,9 @@ The deepest struct.
 
 # Module: `test_crate::types`
 
-## test_crate::types::Container
-
-*Struct*
+<RustCode code={`pub struct Container<T> {
+    pub items: Vec<T>,
+}`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}]} />
 
 A generic container for items of type `T`.
 
@@ -1539,26 +1889,72 @@ container.add(42);
 assert_eq!(container.len(), 1);
 ```
 
-**Generic Parameters:**
+### Generic Parameters
+
 - T
 
-**Fields:**
-- `items: Vec<T>`
+### Fields
 
-**Methods:**
+<RustCode inline code={`items: Vec<T>`} links={[{"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}]} />
 
-- `fn new() -> Self` - Creates a new empty container.
-- `fn add(self: & mut Self, item: T)` - Adds an item to the container.
-- `fn len(self: &Self) -> usize` - Returns the number of items in the container.
-- `fn is_empty(self: &Self) -> bool` - Returns `true` if the container is empty.
-- `fn iter(self: &Self) -> std::slice::Iter<T>` - Returns an iterator over the items.
 
-**Trait Implementations:**
+### Methods
 
-- **FromIterator**
-  - `fn from_iter<I>(iter: I) -> Self`
-- **Default**
-  - `fn default() -> Self`
+<RustCode inline code={`fn new() -> Self`} links={[]} />
+
+Creates a new empty container.
+
+---
+
+<RustCode inline code={`fn add(self: & mut Self, item: T)`} links={[]} />
+
+Adds an item to the container.
+
+---
+
+<RustCode inline code={`fn len(self: &Self) -> usize`} links={[]} />
+
+Returns the number of items in the container.
+
+---
+
+<RustCode inline code={`fn is_empty(self: &Self) -> bool`} links={[]} />
+
+Returns `true` if the container is empty.
+
+---
+
+<RustCode inline code={`fn iter(self: &Self) -> Iter<T>`} links={[{"text": "Iter", "href": "https://doc.rust-lang.org/core/slice/iter/struct.Iter.html"}]} />
+
+Returns an iterator over the items.
+
+---
+
+<RustCode inline code={`fn process_with_options<F>(
+    self: &Self,
+    filter_fn: F,
+    transform_map: HashMap<String, String>,
+    options: Vec<(String, String)>,
+    timeout_ms: u64
+) -> Result<Vec<String>, String>`} links={[{"text": "HashMap", "href": "https://doc.rust-lang.org/std/collections/hash/map/struct.HashMap.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}, {"text": "Vec", "href": "https://doc.rust-lang.org/alloc/vec/struct.Vec.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}, {"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
+
+Processes items with complex filtering and transformation options.
+
+---
+
+### Trait Implementations
+
+#### Default
+
+<RustCode inline code={`fn default() -> Self`} links={[]} />
+
+---
+
+#### FromIterator
+
+<RustCode inline code={`fn from_iter<I>(iter: I) -> Self`} links={[]} />
+
+---
 
 
 
@@ -1580,70 +1976,114 @@ The maximum number of retries.
 
 ## test_crate::types::Map
 
-*Type Alias*: `std::collections::HashMap<K, V>`
+*Type Alias*: `[HashMap](https://doc.rust-lang.org/std/collections/hash/map/struct.HashMap.html)<K, V>`
 
 A type alias for a generic key-value map.
 
 
 
-## test_crate::types::Pair
-
-*Struct*
+<RustCode code={`pub struct Pair<T, U> {
+    pub first: T,
+    pub second: U,
+}`} links={[]} />
 
 A pair of related values.
 
-**Generic Parameters:**
+### Generic Parameters
+
 - T
 - U
 
-**Fields:**
-- `first: T`
-- `second: U`
+### Fields
 
-**Methods:**
+<RustCode inline code={`first: T`} links={[]} />
 
-- `fn new(first: T, second: U) -> Self` - Creates a new pair.
-- `fn swap(self: Self) -> Pair<U, T>` - Swaps the values in the pair.
+<RustCode inline code={`second: U`} links={[]} />
+
+
+### Methods
+
+<RustCode inline code={`fn new(first: T, second: U) -> Self`} links={[]} />
+
+Creates a new pair.
+
+---
+
+<RustCode inline code={`fn swap(self: Self) -> Pair<U, T>`} links={[{"text": "Pair", "href": "/test_crate/types/struct.Pair"}]} />
+
+Swaps the values in the pair.
+
+---
 
 **Traits:** Eq, Copy
 
-**Trait Implementations:**
+### Trait Implementations
 
-- **Clone**
-  - `fn clone(self: &Self) -> Pair<T, U>`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
-- **From**
-  - `fn from((first, second): (T, U)) -> Self`
-- **PartialEq**
-  - `fn eq(self: &Self, other: &Pair<T, U>) -> bool`
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> Pair<T, U>`} links={[{"text": "Pair", "href": "/test_crate/types/struct.Pair"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### From
+
+<RustCode inline code={`fn from((first, second): (T, U)) -> Self`} links={[]} />
+
+---
+
+#### PartialEq
+
+<RustCode inline code={`fn eq(self: &Self, other: &Pair<T, U>) -> bool`} links={[{"text": "Pair", "href": "/test_crate/types/struct.Pair"}]} />
+
+---
 
 
 
-## test_crate::types::RefStruct
-
-*Struct*
+<RustCode code={`pub struct RefStruct<'a> {
+    pub data: &'a str,
+}`} links={[]} />
 
 A struct with a lifetime parameter.
 
 Demonstrates borrowing data with an explicit lifetime.
 
-**Generic Parameters:**
+### Generic Parameters
+
 - 'a
 
-**Fields:**
-- `data: &'a str`
+### Fields
 
-**Methods:**
-
-- `fn new(data: &'a str) -> Self` - Creates a new `RefStruct` from borrowed data.
-- `fn get(self: &Self) -> &'a str` - Returns the borrowed data.
+<RustCode inline code={`data: &'a str`} links={[]} />
 
 
+### Methods
 
-## test_crate::types::Status
+<RustCode inline code={`fn new(data: &'a str) -> Self`} links={[]} />
 
-*Enum*
+Creates a new `RefStruct` from borrowed data.
+
+---
+
+<RustCode inline code={`fn get(self: &Self) -> &'a str`} links={[]} />
+
+Returns the borrowed data.
+
+---
+
+
+
+<RustCode code={`pub enum Status {
+    Idle,
+    Running { progress: f32 },
+    Completed,
+    Failed { error: String },
+}`} links={[{"text": "String", "href": "https://doc.rust-lang.org/alloc/string/struct.String.html"}]} />
 
 Represents the status of an operation.
 
@@ -1652,34 +2092,64 @@ This enum demonstrates:
 - Struct variants with named fields
 - Multiple variant types in one enum
 
-**Variants:**
+### Variants
+
 - `Idle` - The operation is idle and waiting to start.
 - `Running{ progress: f32 }` - The operation is running with progress information.
 - `Completed` - The operation completed successfully.
 - `Failed{ error: String }` - The operation failed with an error message.
 
-**Methods:**
+### Methods
 
-- `fn is_running(self: &Self) -> bool` - Returns `true` if the status is `Running`.
-- `fn is_completed(self: &Self) -> bool` - Returns `true` if the status is `Completed`.
-- `fn progress(self: &Self) -> Option<f32>` - Returns the progress if the status is `Running`.
+<RustCode inline code={`fn is_running(self: &Self) -> bool`} links={[]} />
 
-**Trait Implementations:**
+Returns `true` if the status is `Running`.
 
-- **PartialEq**
-  - `fn eq(self: &Self, other: &Status) -> bool`
-- **Clone**
-  - `fn clone(self: &Self) -> Status`
-- **Default**
-  - `fn default() -> Self`
-- **Debug**
-  - `fn fmt(self: &Self, f: & mut $crate::fmt::Formatter) -> $crate::fmt::Result`
+---
+
+<RustCode inline code={`fn is_completed(self: &Self) -> bool`} links={[]} />
+
+Returns `true` if the status is `Completed`.
+
+---
+
+<RustCode inline code={`fn progress(self: &Self) -> Option<f32>`} links={[{"text": "Option", "href": "https://doc.rust-lang.org/std/option/enum.Option.html"}]} />
+
+Returns the progress if the status is `Running`.
+
+---
+
+### Trait Implementations
+
+#### Clone
+
+<RustCode inline code={`fn clone(self: &Self) -> Status`} links={[{"text": "Status", "href": "/test_crate/types/enum.Status"}]} />
+
+---
+
+#### Debug
+
+<RustCode inline code={`fn fmt(self: &Self, f: & mut Formatter) -> Result`} links={[{"text": "Formatter", "href": "https://doc.rust-lang.org/core/fmt/struct.Formatter.html"}, {"text": "Result", "href": "https://doc.rust-lang.org/std/result/enum.Result.html"}]} />
+
+---
+
+#### Default
+
+<RustCode inline code={`fn default() -> Self`} links={[]} />
+
+---
+
+#### PartialEq
+
+<RustCode inline code={`fn eq(self: &Self, other: &Status) -> bool`} links={[{"text": "Status", "href": "/test_crate/types/enum.Status"}]} />
+
+---
 
 
 
 ## test_crate::types::StringMap
 
-*Type Alias*: `std::collections::HashMap<String, String>`
+*Type Alias*: `[HashMap](https://doc.rust-lang.org/std/collections/hash/map/struct.HashMap.html)<[String](https://doc.rust-lang.org/alloc/string/struct.String.html), [String](https://doc.rust-lang.org/alloc/string/struct.String.html)>`
 
 A type alias for a string-to-string map.
 
