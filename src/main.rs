@@ -57,6 +57,30 @@ struct Cli {
         help = "Document only all direct dependencies (excludes current crate)"
     )]
     all_deps: bool,
+
+    #[arg(
+        long = "sidebarconfig-collapsed",
+        value_name = "BOOL",
+        num_args = 0..=1,
+        default_missing_value = "true",
+        default_value = "true",
+        help = "Generate sidebar configuration with collapsed categories [default: true]"
+    )]
+    sidebarconfig_collapsed: bool,
+
+    #[arg(
+        long,
+        value_name = "PATH",
+        help = "Custom path for the sidebar configuration file (e.g., 'apps/docs/sidebars-rust.ts')"
+    )]
+    sidebar_output: Option<PathBuf>,
+
+    #[arg(
+        long,
+        value_name = "URL",
+        help = "URL for the 'Back to parent' link in root crate sidebars (e.g., '/docs/runtime/guides/runtime')"
+    )]
+    sidebar_root_link: Option<String>,
 }
 
 fn main() -> Result<()> {
@@ -77,6 +101,9 @@ fn main() -> Result<()> {
             include_private: cli.include_private,
             base_path: &cli.base_path,
             workspace_crates: &cli.workspace_crates,
+            sidebarconfig_collapsed: cli.sidebarconfig_collapsed,
+            sidebar_output: cli.sidebar_output.as_deref(),
+            sidebar_root_link: cli.sidebar_root_link.as_deref(),
         };
 
         cargo_doc_docusaurus::convert_json_file(&options)?;
@@ -185,6 +212,9 @@ fn document_current_crate(cli: &Cli) -> Result<Option<String>> {
         include_private: cli.include_private,
         base_path: &cli.base_path,
         workspace_crates: &cli.workspace_crates,
+        sidebarconfig_collapsed: cli.sidebarconfig_collapsed,
+        sidebar_output: cli.sidebar_output.as_deref(),
+        sidebar_root_link: cli.sidebar_root_link.as_deref(),
     };
 
     cargo_doc_docusaurus::convert_json_file(&options)?;
@@ -214,7 +244,7 @@ fn document_all_dependencies(cli: &Cli) -> Result<Vec<String>> {
     for dep in &deps_to_document {
         println!("\n🔨 Generating docs for '{}'...", dep.name);
 
-        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates) {
+        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates, cli.sidebarconfig_collapsed, cli.sidebar_output.as_deref(), cli.sidebar_root_link.as_deref()) {
             Ok(()) => {
                 successful.push(dep.name.clone());
                 println!("  ✓ Successfully documented '{}'", dep.name);
@@ -267,7 +297,7 @@ fn document_dependencies(cli: &Cli) -> Result<()> {
     for dep in &deps_to_document {
         println!("\n🔨 Generating docs for '{}'...", dep.name);
 
-        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates) {
+        match document_single_dependency(dep, &cli.output, cli.include_private, &cli.base_path, &cli.workspace_crates, cli.sidebarconfig_collapsed, cli.sidebar_output.as_deref(), cli.sidebar_root_link.as_deref()) {
             Ok(()) => {
                 successful += 1;
                 println!("  ✓ Successfully documented '{}'", dep.name);
@@ -356,6 +386,9 @@ fn document_single_dependency(
     include_private: bool,
     base_path: &str,
     workspace_crates: &[String],
+    sidebarconfig_collapsed: bool,
+    sidebar_output: Option<&Path>,
+    sidebar_root_link: Option<&str>,
 ) -> Result<()> {
     // Build the package specification
     // If we have a version, use name@version to disambiguate multiple versions
@@ -405,6 +438,9 @@ fn document_single_dependency(
         include_private,
         base_path,
         workspace_crates,
+        sidebarconfig_collapsed,
+        sidebar_output,
+        sidebar_root_link,
     };
 
     cargo_doc_docusaurus::convert_json_file(&options)?;

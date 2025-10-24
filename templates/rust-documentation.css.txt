@@ -142,3 +142,68 @@ div:has(> a.rust-type) {
 [data-theme='light'] .rust-field-doc {
   color: rgba(0, 0, 0, 0.7);
 }
+
+/* ===========================================================================
+   SIDEBAR STYLING
+   =========================================================================== */
+
+/* Sidebar module title */
+.rust-sidebar-module-title {
+  font-weight: 600;
+  font-size: 1.1em;
+  padding: 0.5em 0;
+  margin: 0.5em 0 1em 0;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  color: var(--ifm-font-color-base);
+}
+
+/* Back link styling */
+.rust-sidebar-back-link {
+  display: block;
+  padding: 0.5em 0;
+  margin-bottom: 0.5em;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.rust-sidebar-back-link:hover {
+  opacity: 1;
+}
+
+/* Apply colors to sidebar items */
+.menu__link.rust-mod {
+  color: var(--rust-color-module) !important;
+}
+
+.menu__link.rust-struct {
+  color: var(--rust-color-struct) !important;
+}
+
+.menu__link.rust-trait {
+  color: var(--rust-color-trait) !important;
+}
+
+.menu__link.rust-fn,
+.menu__link.rust-constant,
+.menu__link.rust-type {
+  color: var(--rust-color-function) !important;
+}
+
+/* Hover states for sidebar items */
+.menu__link.rust-mod:hover {
+  color: var(--rust-color-module-hover) !important;
+}
+
+.menu__link.rust-struct:hover {
+  color: var(--rust-color-struct-hover) !important;
+}
+
+.menu__link.rust-trait:hover {
+  color: var(--rust-color-trait-hover) !important;
+}
+
+.menu__link.rust-fn:hover,
+.menu__link.rust-constant:hover,
+.menu__link.rust-type:hover {
+  color: var(--rust-color-function-hover) !important;
+}

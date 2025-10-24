@@ -25,12 +25,11 @@ mkdir -p example-docs/src/components/RustCode
 cp templates/RustCode/index.tsx.txt example-docs/src/components/RustCode/index.tsx
 cp templates/RustCode/styles.module.css.txt example-docs/src/components/RustCode/styles.module.css
 
-# Copy CSS to static folder (removing .txt extension)
-mkdir -p example-docs/static/css
-cp templates/rust-documentation.css.txt example-docs/static/css/rust-documentation.css
-
-# Copy custom.css template to src/css (removing .txt extension)
+# Copy CSS files to both src/css (for source) and static/css (for serving)
 mkdir -p example-docs/src/css
+mkdir -p example-docs/static/css
+cp templates/rust-documentation.css.txt example-docs/src/css/rust-documentation.css
+cp templates/rust-documentation.css.txt example-docs/static/css/rust-documentation.css
 cp templates/custom.css.txt example-docs/src/css/custom.css
 
 echo ""

@@ -15,6 +15,9 @@
 //!     include_private: false,
 //!     base_path: "",
 //!     workspace_crates: &[],
+//!     sidebarconfig_collapsed: false,
+//!     sidebar_output: None,
+//!     sidebar_root_link: None,
 //! };
 //!
 //! convert_json_file(&options).expect("Conversion failed");
@@ -41,6 +44,12 @@ pub struct ConversionOptions<'a> {
     pub base_path: &'a str,
     /// List of workspace crate names - external crates in this list will use internal links
     pub workspace_crates: &'a [String],
+    /// Whether to generate sidebar categories as collapsed
+    pub sidebarconfig_collapsed: bool,
+    /// Custom path for the sidebar configuration file
+    pub sidebar_output: Option<&'a Path>,
+    /// URL for the 'Back to parent' link in root crate sidebars
+    pub sidebar_root_link: Option<&'a str>,
 }
 
 /// Convert a rustdoc JSON file to markdown (multi-file output).
@@ -67,6 +76,9 @@ pub struct ConversionOptions<'a> {
 ///     include_private: false,
 ///     base_path: "",  // Optional: use "/docs/runtime/rust" for Docusaurus routing
 ///     workspace_crates: &[],
+///     sidebarconfig_collapsed: false,
+///     sidebar_output: None,
+///     sidebar_root_link: None,
 /// };
 ///
 /// convert_json_file(&options).expect("Conversion failed");
@@ -78,11 +90,13 @@ pub fn convert_json_file(options: &ConversionOptions) -> Result<()> {
         options.include_private, 
         options.base_path,
         options.workspace_crates,
+        options.sidebarconfig_collapsed,
+        options.sidebar_root_link,
     )?;
 
     // Write to crate-specific subdirectory
     let crate_output_dir = options.output_dir.join(&output.crate_name);
-    writer::write_markdown_multifile(&crate_output_dir, &output)?;
+    writer::write_markdown_multifile_with_sidebar_path(&crate_output_dir, &output, options.sidebar_output)?;
     Ok(())
 }
 

@@ -5,7 +5,7 @@ use std::path::Path;
 fn test_multifile_output_structure() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let mut file_paths: Vec<_> = output.files.keys().collect();
@@ -19,7 +19,7 @@ fn test_multifile_output_structure() {
 fn test_index_file() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let index_content = output.files.get("index.md").expect("index.md not found");
@@ -30,7 +30,7 @@ fn test_index_file() {
 fn test_lib_module() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     if let Some(lib_content) = output.files.get("index.md") {
@@ -42,7 +42,7 @@ fn test_lib_module() {
 fn test_types_module() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     if let Some(types_content) = output.files.get("types.md") {
@@ -54,7 +54,7 @@ fn test_types_module() {
 fn test_functions_module() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     if let Some(functions_content) = output.files.get("functions.md") {
@@ -66,7 +66,7 @@ fn test_functions_module() {
 fn test_nested_modules() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     if let Some(nested_content) = output.files.get("nested.md") {
@@ -86,7 +86,7 @@ fn test_nested_modules() {
 fn test_struct_formatting() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     // Structs now use struct. prefix
@@ -107,7 +107,7 @@ fn test_struct_formatting() {
 fn test_generic_struct_formatting() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let generic_struct = output.files.get("struct.GenericStruct.md").expect("struct.GenericStruct.md not found");
@@ -119,7 +119,7 @@ fn test_generic_struct_formatting() {
 fn test_enum_formatting() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let simple_enum = output.files.get("enum.SimpleEnum.md").expect("enum.SimpleEnum.md not found");
@@ -134,7 +134,7 @@ fn test_enum_formatting() {
 fn test_function_formatting() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     // Functions now use fn. prefix and are in the functions module directory
@@ -146,7 +146,7 @@ fn test_function_formatting() {
 fn test_trait_formatting() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let my_trait = output.files.get("trait.MyTrait.md").expect("trait.MyTrait.md not found");
@@ -158,7 +158,7 @@ fn test_trait_formatting() {
 fn test_methods_and_impls() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     // Methods are now in individual struct files with struct. prefix
@@ -170,7 +170,7 @@ fn test_methods_and_impls() {
 fn test_constants_and_type_aliases() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
-    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let lib_content = output.files.get("index.md").expect("index.md not found");
@@ -184,9 +184,9 @@ fn test_include_private() {
     let json_path = Path::new("tests/fixtures/test_crate.json");
     let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
 
-    let output_public = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output_public = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
-    let output_private = converter::convert_to_markdown_multifile(&crate_data, true, "", &[])
+    let output_private = converter::convert_to_markdown_multifile(&crate_data, true, "", &[], false)
         .expect("Failed to convert to markdown");
 
     let public_count = output_public.files.len();
@@ -208,6 +208,8 @@ fn test_conversion_end_to_end() {
         include_private: false,
         base_path: "",
         workspace_crates: &[],
+        sidebarconfig_collapsed: false,
+        sidebar_output: None,
     };
 
     cargo_doc_docusaurus::convert_json_file(&options).expect("Conversion failed");
@@ -239,7 +241,7 @@ fn test_workspace_crates_internal_links() {
     // We know from the JSON that there are references to external crates
     
     // Test without workspace_crates parameter
-    let output_default = converter::convert_to_markdown_multifile(&crate_data, false, "", &[])
+    let output_default = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
         .expect("Failed to convert to markdown");
     
     // Test with workspace_crates parameter  
@@ -248,7 +250,8 @@ fn test_workspace_crates_internal_links() {
         &crate_data, 
         false, 
         "/docs/rust",
-        &workspace_crates
+        &workspace_crates,
+        false
     ).expect("Failed to convert to markdown");
     
     // Both should generate files successfully
@@ -291,14 +294,16 @@ fn test_workspace_crates_with_hyphens() {
         &crate_data,
         false,
         "/docs",
-        &workspace_crates_with_hyphens
+        &workspace_crates_with_hyphens,
+        false
     ).expect("Should work with hyphens");
     
     let output_underscores = converter::convert_to_markdown_multifile(
         &crate_data,
         false,
         "/docs",
-        &workspace_crates_with_underscores
+        &workspace_crates_with_underscores,
+        false
     ).expect("Should work with underscores");
     
     // Both should generate the same number of files
@@ -307,4 +312,60 @@ fn test_workspace_crates_with_hyphens() {
         output_underscores.files.len(),
         "Both hyphen and underscore notation should work identically"
     );
+}
+
+#[test]
+fn test_sidebar_collapsed_configuration() {
+    let json_path = Path::new("tests/fixtures/test_crate.json");
+    let crate_data = parser::load_rustdoc_json(json_path).expect("Failed to load JSON");
+    
+    // Test with collapsed = false (default)
+    let output_collapsed_false = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], false)
+        .expect("Failed to convert to markdown");
+    
+    // Test with collapsed = true
+    let output_collapsed_true = converter::convert_to_markdown_multifile(&crate_data, false, "", &[], true)
+        .expect("Failed to convert to markdown");
+    
+    // Both should have a sidebar
+    assert!(output_collapsed_false.sidebar.is_some(), "Should generate sidebar when collapsed=false");
+    assert!(output_collapsed_true.sidebar.is_some(), "Should generate sidebar when collapsed=true");
+    
+    let sidebar_false = output_collapsed_false.sidebar.as_ref().unwrap();
+    let sidebar_true = output_collapsed_true.sidebar.as_ref().unwrap();
+    
+    // The sidebar content should be different
+    assert_ne!(sidebar_false, sidebar_true, "Sidebar content should differ based on collapsed setting");
+    
+    // Check that the collapsed settings are correct
+    assert!(sidebar_false.contains("collapsed: false"), "Sidebar should contain 'collapsed: false' when disabled");
+    assert!(sidebar_true.contains("collapsed: true"), "Sidebar should contain 'collapsed: true' when enabled");
+}
+
+#[test]
+fn test_custom_sidebar_output() {
+    let output_dir = std::env::temp_dir().join("cargo_doc_md_test_sidebar");
+    let sidebar_path = output_dir.join("custom-sidebar.ts");
+    let _ = std::fs::remove_dir_all(&output_dir);
+    std::fs::create_dir_all(&output_dir).expect("Failed to create test directory");
+
+    let json_path = Path::new("tests/fixtures/test_crate.json");
+    let options = ConversionOptions {
+        input_path: json_path,
+        output_dir: &output_dir.join("docs"),
+        include_private: false,
+        base_path: "",
+        workspace_crates: &[],
+        sidebarconfig_collapsed: false,
+        sidebar_output: Some(&sidebar_path),
+    };
+
+    cargo_doc_docusaurus::convert_json_file(&options).expect("Conversion failed");
+
+    // Check that the sidebar was created in the custom location
+    assert!(sidebar_path.exists(), "Custom sidebar should be created");
+    
+    let sidebar_content = std::fs::read_to_string(&sidebar_path).expect("Failed to read sidebar");
+    assert!(sidebar_content.contains("export const rustApiDocumentation"), "Should contain sidebar export");
+    assert!(sidebar_content.contains("test_crate/index"), "Should contain test_crate reference");
 }

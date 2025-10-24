@@ -10,6 +10,8 @@ thread_local! {
     static BASE_PATH: RefCell<String> = RefCell::new(String::new());
     /// Thread-local storage for workspace crate names
     static WORKSPACE_CRATES: RefCell<Vec<String>> = RefCell::new(Vec::new());
+    /// Thread-local storage for the sidebar root link URL
+    static SIDEBAR_ROOT_LINK: RefCell<Option<String>> = RefCell::new(None);
 }
 
 /// Represents the multi-file markdown output
@@ -18,6 +20,32 @@ pub struct MarkdownOutput {
     pub crate_name: String,
     /// Map of relative file path -> content
     pub files: HashMap<String, String>,
+    /// Sidebar configuration (optional, for Docusaurus)
+    pub sidebar: Option<String>,
+}
+
+/// Represents a sidebar item for Docusaurus
+#[derive(Debug, Clone)]
+enum SidebarItem {
+    /// A document reference with optional label
+    Doc {
+        id: String,
+        label: Option<String>,
+        custom_props: Option<String>, // JSON string for customProps field
+    },
+    /// A link item (for dynamic sidebars)
+    Link {
+        href: String,
+        label: String,
+        custom_props: Option<String>,
+    },
+    /// A category with sub-items
+    Category {
+        label: String,
+        items: Vec<SidebarItem>,
+        collapsed: bool,
+        link: Option<String>, // Optional link to make category clickable
+    },
 }
 
 /// Convert a rustdoc Crate to multi-file markdown format.
@@ -26,10 +54,13 @@ pub fn convert_to_markdown_multifile(
     include_private: bool,
     base_path: &str,
     workspace_crates: &[String],
+    sidebarconfig_collapsed: bool,
+    sidebar_root_link: Option<&str>,
 ) -> Result<MarkdownOutput> {
-    // Set the base path and workspace crates for this conversion in thread-local storage
+    // Set the base path, workspace crates, and sidebar root link for this conversion in thread-local storage
     BASE_PATH.with(|bp| *bp.borrow_mut() = base_path.to_string());
     WORKSPACE_CRATES.with(|wc| *wc.borrow_mut() = workspace_crates.to_vec());
+    SIDEBAR_ROOT_LINK.with(|srl| *srl.borrow_mut() = sidebar_root_link.map(|s| s.to_string()));
     
     let root_item = crate_data
         .index
@@ -115,9 +146,13 @@ pub fn convert_to_markdown_multifile(
         generate_individual_pages(items, &item_prefix, &mut files, crate_data, &item_paths, crate_name, module_name, include_private);
     }
 
+    // Generate sidebar structure with sidebars for each module
+    let sidebar = generate_all_sidebars(crate_name, &modules, &item_paths, crate_data, sidebarconfig_collapsed);
+
     Ok(MarkdownOutput {
         crate_name: crate_name.to_string(),
         files,
+        sidebar: Some(sidebar),
     })
 }
 
@@ -336,9 +371,13 @@ fn group_by_module(
         // Get the module path (all elements except the last one)
         let module_path = if let Some(path) = item_paths.get(id) {
             if path.len() > 1 {
+                // Item is in a submodule
                 path[..path.len() - 1].join("::")
+            } else if path.len() == 1 {
+                // Item is at the root of the crate - use crate name as the module path
+                path[0].clone()
             } else {
-                continue; // Skip root-level items without module
+                continue; // Skip items with empty path
             }
         } else {
             continue; // Skip items without path info
@@ -2530,6 +2569,21 @@ fn generate_combined_crate_and_root_content(
 ) -> String {
     let mut output = String::new();
 
+    // Calculate sidebar key for the crate
+    let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
+    let base_path_for_sidebar = base_path
+        .strip_prefix("/docs/")
+        .or_else(|| base_path.strip_prefix("/docs"))
+        .or_else(|| base_path.strip_prefix("/"))
+        .unwrap_or(&base_path);
+    let sidebar_key = format!("{}/{}", base_path_for_sidebar, crate_name);
+
+    // Add frontmatter with displayed_sidebar
+    output.push_str("---\n");
+    output.push_str(&format!("title: {}\n", crate_name));
+    output.push_str(&format!("displayed_sidebar: '{}'\n", sidebar_key));
+    output.push_str("---\n\n");
+
     // Import RustCode component for inline code rendering
     output.push_str("import RustCode from '@site/src/components/RustCode';\n");
     output.push_str("import Link from '@docusaurus/Link';\n\n");
@@ -2773,14 +2827,29 @@ fn generate_individual_pages(
             let file_path = format!("{}{}{}.md", path_prefix, item_prefix, name);
             
             if let Some(mut content) = format_item_with_path(id, item, _crate_data, item_paths, include_private) {
-                // Add frontmatter for Docusaurus navigation with type label
+                // Add frontmatter for Docusaurus navigation with type label and sidebar
                 let type_label = get_item_type_label(item);
                 let title = if type_label.is_empty() {
                     name.to_string()
                 } else {
                     format!("{} {}", type_label, name)
                 };
-                let frontmatter = format!("---\ntitle: \"{}\"\n---\n\nimport RustCode from '@site/src/components/RustCode';\nimport Link from '@docusaurus/Link';\n\n", title);
+                
+                // Calculate sidebar key from module path (same as module overview)
+                let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
+                let base_path_for_sidebar = base_path
+                    .strip_prefix("/docs/")
+                    .or_else(|| base_path.strip_prefix("/docs"))
+                    .or_else(|| base_path.strip_prefix("/"))
+                    .unwrap_or(&base_path);
+                let sidebar_key = if _module_name == _crate_name {
+                    format!("{}/{}", base_path_for_sidebar, _crate_name)
+                } else {
+                    let module_path = _module_name.replace("::", "/");
+                    format!("{}/{}", base_path_for_sidebar, module_path)
+                };
+                
+                let frontmatter = format!("---\ntitle: \"{}\"\ndisplayed_sidebar: '{}'\n---\n\nimport RustCode from '@site/src/components/RustCode';\nimport Link from '@docusaurus/Link';\n\n", title, sidebar_key);
                 
                 // Add breadcrumb path (like rustdoc does for all items)
                 // For re-exported items (duplicates), use the current module path + item name
@@ -2827,9 +2896,25 @@ fn generate_module_overview(
     // Get just the last component of the module name (rustdoc style)
     let short_name = display_name.split("::").last().unwrap_or(display_name);
 
-    // Add FrontMatter for Docusaurus with the module name as title
+    // Calculate sidebar key from module path
+    let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
+    let base_path_for_sidebar = base_path
+        .strip_prefix("/docs/")
+        .or_else(|| base_path.strip_prefix("/docs"))
+        .or_else(|| base_path.strip_prefix("/"))
+        .unwrap_or(&base_path);
+    let sidebar_key = if module_name == crate_name {
+        format!("{}/{}", base_path_for_sidebar, crate_name)
+    } else {
+        let module_path = module_name.replace("::", "/");
+        format!("{}/{}", base_path_for_sidebar, module_path)
+    };
+
+    // Add FrontMatter for Docusaurus with the module name as title and sidebar
     output.push_str("---\n");
     output.push_str(&format!("title: {}\n", short_name));
+    output.push_str(&format!("sidebar_label: {}\n", short_name));
+    output.push_str(&format!("displayed_sidebar: '{}'\n", sidebar_key));
     output.push_str("---\n\n");
     
     // Import RustCode component
@@ -3111,6 +3196,739 @@ fn generate_module_overview(
     }
 
     output
+}
+
+/// Generate sidebar structure for Docusaurus
+/// This generates multiple sidebars - one for each module that has content
+fn generate_all_sidebars(
+    crate_name: &str,
+    modules: &HashMap<String, Vec<(Id, Item)>>,
+    _item_paths: &HashMap<Id, Vec<String>>,
+    crate_data: &Crate,
+    sidebarconfig_collapsed: bool,
+) -> String {
+    let mut all_sidebars = HashMap::new();
+    
+    // Get the base_path from thread-local storage
+    let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
+    
+    // For Docusaurus sidebar, paths must be relative to the docs/ folder
+    let sidebar_prefix = if base_path == "/docs" || base_path == "docs" {
+        ""
+    } else if base_path.starts_with("/docs/") {
+        base_path.strip_prefix("/docs/").unwrap()
+    } else if base_path.starts_with("docs/") {
+        base_path.strip_prefix("docs/").unwrap()
+    } else {
+        &base_path
+    };
+    
+    // Generate sidebar for the root crate (this shows in rootRustSidebar)
+    let root_sidebar = generate_sidebar_for_module(
+        crate_name,
+        &crate_name.to_string(),
+        modules,
+        crate_data,
+        sidebar_prefix,
+        sidebarconfig_collapsed,
+        true, // is_root
+    );
+    
+    let root_path = if sidebar_prefix.is_empty() {
+        crate_name.to_string()
+    } else {
+        format!("{}/{}", sidebar_prefix, crate_name)
+    };
+    all_sidebars.insert(root_path, root_sidebar);
+    
+    // Generate sidebar for each submodule (for dynamic sidebar when entering modules)
+    for module_key in modules.keys() {
+        if module_key == crate_name {
+            continue; // Skip root, already handled
+        }
+        
+        let sidebar = generate_sidebar_for_module(
+            crate_name,
+            module_key,
+            modules,
+            crate_data,
+            sidebar_prefix,
+            sidebarconfig_collapsed,
+            false, // not root
+        );
+        
+        // Convert module_key from Rust path (::) to file path (/)
+        let module_path_normalized = module_key.replace("::", "/");
+        let module_path = if sidebar_prefix.is_empty() {
+            module_path_normalized
+        } else {
+            format!("{}/{}", sidebar_prefix, module_path_normalized)
+        };
+        all_sidebars.insert(module_path, sidebar);
+    }
+    
+    // Convert to TypeScript with multiple sidebars
+    sidebars_to_js(&all_sidebars, sidebarconfig_collapsed)
+}
+
+/// Generate sidebar for a specific module
+fn generate_sidebar_for_module(
+    _crate_name: &str, // Prefixed with _ to avoid unused warning
+    module_key: &str,
+    modules: &HashMap<String, Vec<(Id, Item)>>,
+    crate_data: &Crate,
+    sidebar_prefix: &str,
+    sidebarconfig_collapsed: bool,
+    is_root: bool,
+) -> Vec<SidebarItem> {
+    let module_items = modules.get(module_key).cloned().unwrap_or_default();
+    
+    // Convert module_key from :: to / for doc IDs
+    let module_path = module_key.replace("::", "/");
+    
+    let mut sidebar_items = Vec::new();
+    
+    // Add "Back to parent" link
+    if is_root {
+        // For root crate: use the configured sidebar_root_link if available
+        let sidebar_root_link = SIDEBAR_ROOT_LINK.with(|srl| srl.borrow().clone());
+        
+        if let Some(link) = sidebar_root_link {
+            sidebar_items.push(SidebarItem::Link {
+                href: link,
+                label: "← Back to parent".to_string(),
+                custom_props: Some("rust-sidebar-back-link".to_string()),
+            });
+        }
+    } else {
+        // For submodules: link to parent module
+        let parent_path = if module_key.contains("::") {
+            // Has parent module - link to parent
+            let parent = module_key.rsplitn(2, "::").nth(1).unwrap();
+            let parent_path = parent.replace("::", "/");
+            if sidebar_prefix.is_empty() {
+                parent_path
+            } else {
+                format!("{}/{}", sidebar_prefix, parent_path)
+            }
+        } else {
+            // Root module - link back to crate root
+            if sidebar_prefix.is_empty() {
+                module_key.to_string()
+            } else {
+                format!("{}/{}", sidebar_prefix, module_key)
+            }
+        };
+        
+        sidebar_items.push(SidebarItem::Link {
+            href: format!("/docs/{}", parent_path),
+            label: "← Back to parent".to_string(),
+            custom_props: Some("rust-sidebar-back-link".to_string()),
+        });
+    }
+    
+    // Add Overview link to the module/crate index
+    let module_index_path = if sidebar_prefix.is_empty() {
+        format!("{}/index", module_path)
+    } else {
+        format!("{}/{}/index", sidebar_prefix, module_path)
+    };
+    
+    // Label: for root crate use crate name, for submodules use "Overview"
+    let overview_label = if is_root {
+        module_key.to_string() // Use crate name as label
+    } else {
+        "Overview".to_string()
+    };
+    
+    sidebar_items.push(SidebarItem::Doc {
+        id: module_index_path,
+        label: Some(overview_label),
+        custom_props: Some("rust-mod".to_string()),
+    });
+    
+    // Categorize items by type
+    let mut by_type: HashMap<&str, Vec<&Item>> = HashMap::new();
+    
+    for (_, item) in &module_items {
+        if matches!(&item.inner, ItemEnum::Use(_)) {
+            continue;
+        }
+        
+        let type_name = match &item.inner {
+            ItemEnum::Module(_) => "Modules",
+            ItemEnum::Struct(_) | ItemEnum::StructField(_) => "Structs",
+            ItemEnum::Enum(_) | ItemEnum::Variant(_) => "Enums",
+            ItemEnum::Function(_) => "Functions",
+            ItemEnum::Trait(_) => "Traits",
+            ItemEnum::Constant { .. } => "Constants",
+            ItemEnum::TypeAlias(_) => "Type Aliases",
+            ItemEnum::Macro(_) => "Macros",
+            ItemEnum::ProcMacro(_) => "Proc Macros",
+            ItemEnum::Static { .. } => "Statics",
+            _ => continue,
+        };
+        
+        by_type.entry(type_name).or_default().push(item);
+    }
+    
+    let type_order = vec![
+        "Modules", "Macros", "Proc Macros", "Structs", "Enums",
+        "Traits", "Functions", "Type Aliases", "Constants", "Statics",
+    ];
+    
+    for type_name in type_order {
+        if let Some(items_of_type) = by_type.get(type_name) {
+            let mut category_items = Vec::new();
+            
+            for item in items_of_type {
+                if let Some(name) = &item.name {
+                    // For modules, check if they have public content
+                    if type_name == "Modules" {
+                        if let ItemEnum::Module(module_item) = &item.inner {
+                            if !module_has_public_content(&module_item.items, &crate_data.index) {
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    let (doc_id, class_name) = if type_name == "Modules" {
+                        let full_module_path = format!("{}/{}", module_path, name);
+                        let id = if sidebar_prefix.is_empty() {
+                            format!("{}/index", full_module_path)
+                        } else {
+                            format!("{}/{}/index", sidebar_prefix, full_module_path)
+                        };
+                        (id, "rust-mod")
+                    } else {
+                        let prefix = get_item_prefix(item);
+                        let id = if sidebar_prefix.is_empty() {
+                            format!("{}/{}{}", module_path, prefix, name)
+                        } else {
+                            format!("{}/{}/{}{}", sidebar_prefix, module_path, prefix, name)
+                        };
+                        
+                        // Determine CSS class based on item type
+                        let class = if prefix.starts_with("struct.") {
+                            "rust-struct"
+                        } else if prefix.starts_with("enum.") {
+                            "rust-struct" // Same color as struct
+                        } else if prefix.starts_with("trait.") {
+                            "rust-trait"
+                        } else if prefix.starts_with("fn.") {
+                            "rust-fn"
+                        } else if prefix.starts_with("constant.") {
+                            "rust-constant"
+                        } else if prefix.starts_with("type.") {
+                            "rust-type"
+                        } else {
+                            "rust-item"
+                        };
+                        (id, class)
+                    };
+                
+                // Extract a nice label from the item name
+                let label = name.to_string();
+                
+                category_items.push(SidebarItem::Doc {
+                    id: doc_id,
+                    label: Some(label),
+                    custom_props: Some(class_name.to_string()),
+                });
+            }
+        } // Close for item in items_of_type
+        
+        if !category_items.is_empty() {
+            // Always wrap items in a category (for both root and submodules)
+            sidebar_items.push(SidebarItem::Category {
+                label: type_name.to_string(),
+                items: category_items,
+                collapsed: sidebarconfig_collapsed,
+                link: None,
+            });
+        }
+    } // Close if let Some(items_of_type)
+} // Close for type_name in type_order
+    
+    // Add "In crate <parent_path>" section at the end for submodules (rustdoc style)
+    // Or "Crates" section for root crates
+    if !is_root {
+        let (parent_module, siblings_label) = if module_key.contains("::") {
+            // Has parent module - show siblings
+            let parent = module_key.rsplitn(2, "::").nth(1).unwrap();
+            (Some(parent), format!("In {}", parent))
+        } else {
+            // Root module of crate - show siblings in crate
+            (None, format!("In crate {}", _crate_name))
+        };
+        
+        // Find all sibling modules (modules with the same parent)
+        let mut sibling_modules: Vec<&String> = modules
+            .keys()
+            .filter(|key| {
+                if let Some(parent) = parent_module {
+                    // Check if this module has the same parent
+                    if let Some(key_parent) = key.rsplitn(2, "::").nth(1) {
+                        key_parent == parent && 
+                        key.matches("::").count() == module_key.matches("::").count()
+                    } else {
+                        false
+                    }
+                } else {
+                    // Top-level modules (no :: in the key, or just crate_name::module)
+                    key.matches("::").count() == module_key.matches("::").count() &&
+                    *key != _crate_name
+                }
+            })
+            .collect();
+        
+        sibling_modules.sort();
+        
+        if !sibling_modules.is_empty() {
+            let mut sibling_items = Vec::new();
+            
+            for sibling_key in sibling_modules {
+                let sibling_name = sibling_key.split("::").last().unwrap_or(sibling_key);
+                let sibling_path = sibling_key.replace("::", "/");
+                let sibling_doc_id = if sidebar_prefix.is_empty() {
+                    format!("{}/index", sibling_path)
+                } else {
+                    format!("{}/{}/index", sidebar_prefix, sibling_path)
+                };
+                
+                // Highlight current module
+                let label = if sibling_key == module_key {
+                    format!("{} (current)", sibling_name)
+                } else {
+                    sibling_name.to_string()
+                };
+                
+                sibling_items.push(SidebarItem::Doc {
+                    id: sibling_doc_id,
+                    label: Some(label),
+                    custom_props: Some("rust-mod".to_string()),
+                });
+            }
+            
+            sidebar_items.push(SidebarItem::Category {
+                label: siblings_label,
+                items: sibling_items,
+                collapsed: false, // Keep open like rustdoc
+                link: None,
+            });
+        }
+    } else {
+        // For root crates: add "Crates" section with all sibling crates
+        let workspace_crates = WORKSPACE_CRATES.with(|wc| wc.borrow().clone());
+        
+        if workspace_crates.len() > 1 {
+            let mut crate_items = Vec::new();
+            
+            for crate_name in &workspace_crates {
+                // Normalize crate name: replace hyphens with underscores for file paths
+                let normalized_crate_name = crate_name.replace("-", "_");
+                
+                let crate_doc_id = if sidebar_prefix.is_empty() {
+                    format!("{}/index", normalized_crate_name)
+                } else {
+                    format!("{}/{}/index", sidebar_prefix, normalized_crate_name)
+                };
+                
+                // Highlight current crate
+                let label = if &normalized_crate_name == module_key {
+                    format!("{} (current)", crate_name)
+                } else {
+                    crate_name.to_string()
+                };
+                
+                crate_items.push(SidebarItem::Doc {
+                    id: crate_doc_id,
+                    label: Some(label),
+                    custom_props: Some("rust-mod".to_string()),
+                });
+            }
+            
+            // Sort crate items by label (alphabetically)
+            crate_items.sort_by(|a, b| {
+                let label_a = match a {
+                    SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
+                    SidebarItem::Link { label, .. } => label.as_str(),
+                    SidebarItem::Category { label, .. } => label.as_str(),
+                };
+                let label_b = match b {
+                    SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
+                    SidebarItem::Link { label, .. } => label.as_str(),
+                    SidebarItem::Category { label, .. } => label.as_str(),
+                };
+                label_a.cmp(label_b)
+            });
+            
+            sidebar_items.push(SidebarItem::Category {
+                label: "Crates".to_string(),
+                items: crate_items,
+                collapsed: false, // Keep open like rustdoc
+                link: None,
+            });
+        }
+    }
+    
+    sidebar_items
+}
+
+/// Old generate_sidebar function - kept for backward compatibility during refactoring
+/// Check if a module has any public content (not just re-exports or private items)
+fn module_has_public_content<S: std::hash::BuildHasher>(
+    item_ids: &[Id],
+    index: &HashMap<Id, Item, S>,
+) -> bool {
+    for id in item_ids {
+        if let Some(item) = index.get(id) {
+            // Skip re-exports
+            if matches!(&item.inner, ItemEnum::Use(_)) {
+                continue;
+            }
+            
+            // If we find any non-Use item, the module has content
+            // (we rely on rustdoc to filter out private items already)
+            return true;
+        }
+    }
+    false
+}
+
+fn generate_sidebar(
+    crate_name: &str,
+    modules: &HashMap<String, Vec<(Id, Item)>>,
+    _item_paths: &HashMap<Id, Vec<String>>,
+    crate_data: &Crate,
+    sidebarconfig_collapsed: bool,
+) -> String {
+    let root_module_key = crate_name.to_string();
+    
+    // Get the base_path from thread-local storage
+    let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
+    
+    // For Docusaurus sidebar, paths must be relative to the docs/ folder
+    // If base_path starts with /docs/ or docs/, we need to remove it
+    // because Docusaurus already assumes paths are relative to docs/
+    let sidebar_prefix = if base_path == "/docs" || base_path == "docs" {
+        // If base_path is exactly "/docs" or "docs", use empty prefix
+        ""
+    } else if base_path.starts_with("/docs/") {
+        base_path.strip_prefix("/docs/").unwrap()
+    } else if base_path.starts_with("docs/") {
+        base_path.strip_prefix("docs/").unwrap()
+    } else {
+        &base_path
+    };
+    
+    // Get root-level items
+    let root_items = modules.get(&root_module_key).cloned().unwrap_or_default();
+    
+    // Build sidebar structure
+    let mut sidebar_items = Vec::new();
+    
+    // Add crate overview as first item
+    let crate_index_path = if sidebar_prefix.is_empty() {
+        format!("{}/index", crate_name)
+    } else {
+        format!("{}/{}/index", sidebar_prefix, crate_name)
+    };
+    sidebar_items.push(SidebarItem::Doc {
+        id: crate_index_path,
+        label: Some("Overview".to_string()),
+        custom_props: None,
+    });
+    
+    // Categorize root-level items by type
+    let mut by_type: HashMap<&str, Vec<&Item>> = HashMap::new();
+    
+    for (_, item) in &root_items {
+        // Skip re-exports and private items
+        if matches!(&item.inner, ItemEnum::Use(_)) {
+            continue;
+        }
+        
+        let type_name = match &item.inner {
+            ItemEnum::Module(_) => "Modules",
+            ItemEnum::Struct(_) | ItemEnum::StructField(_) => "Structs",
+            ItemEnum::Enum(_) | ItemEnum::Variant(_) => "Enums",
+            ItemEnum::Function(_) => "Functions",
+            ItemEnum::Trait(_) => "Traits",
+            ItemEnum::Constant { .. } => "Constants",
+            ItemEnum::TypeAlias(_) => "Type Aliases",
+            ItemEnum::Macro(_) => "Macros",
+            ItemEnum::ProcMacro(_) => "Proc Macros",
+            ItemEnum::Static { .. } => "Statics",
+            _ => continue,
+        };
+        
+        by_type.entry(type_name).or_default().push(item);
+    }
+    
+    // Order of categories (like rustdoc)
+    let type_order = vec![
+        "Modules",
+        "Macros",
+        "Proc Macros",
+        "Structs",
+        "Enums",
+        "Traits",
+        "Functions",
+        "Type Aliases",
+        "Constants",
+        "Statics",
+    ];
+    
+    for type_name in type_order {
+        if let Some(items_of_type) = by_type.get(type_name) {
+            let mut category_items = Vec::new();
+            
+            for item in items_of_type {
+                if let Some(name) = &item.name {
+                    // For modules, check if they have public content before adding to sidebar
+                    if type_name == "Modules" {
+                        if let ItemEnum::Module(module_item) = &item.inner {
+                            // Check if module has any public items
+                            if !module_has_public_content(&module_item.items, &crate_data.index) {
+                                continue; // Skip modules without public content
+                            }
+                        }
+                    }
+                    
+                    let doc_path = if type_name == "Modules" {
+                        // Modules link to their index page
+                        if sidebar_prefix.is_empty() {
+                            format!("{}/{}/index", crate_name, name)
+                        } else {
+                            format!("{}/{}/{}/index", sidebar_prefix, crate_name, name)
+                        }
+                    } else {
+                        // Other items use rustdoc-style prefix
+                        let prefix = get_item_prefix(item);
+                    if sidebar_prefix.is_empty() {
+                        format!("{}/{}{}", crate_name, prefix, name)
+                    } else {
+                        format!("{}/{}/{}{}", sidebar_prefix, crate_name, prefix, name)
+                    }
+                };
+                
+                // Extract a nice label from the item name
+                let label = name.to_string();
+                
+                let custom_props = if type_name == "Modules" {
+                    Some("rust-mod".to_string())
+                } else {
+                    None
+                };
+                
+                category_items.push(SidebarItem::Doc {
+                    id: doc_path,
+                    label: Some(label),
+                    custom_props,
+                });
+            }
+        }            if !category_items.is_empty() {
+                sidebar_items.push(SidebarItem::Category {
+                    label: type_name.to_string(),
+                    items: category_items,
+                    collapsed: sidebarconfig_collapsed,
+                    link: None, // Sub-categories are not clickable
+                });
+            }
+        }
+    }
+    
+    // Wrap all items in a crate-level category for multi-crate workspaces
+    // The first item in sidebar_items is the crate index, which we'll use as the category link
+    let crate_index_link = if let Some(SidebarItem::Doc { id, .. }) = sidebar_items.first() {
+        Some(id.clone())
+    } else {
+        None
+    };
+    
+    // Remove the crate index from items since it will be the category link
+    let category_items = if crate_index_link.is_some() {
+        sidebar_items.into_iter().skip(1).collect()
+    } else {
+        sidebar_items
+    };
+    
+    let crate_category = SidebarItem::Category {
+        label: crate_name.to_string(),
+        items: category_items,
+        collapsed: sidebarconfig_collapsed,
+        link: crate_index_link,
+    };
+    
+    // Convert to JavaScript/TypeScript code
+    sidebar_to_js(&[crate_category])
+}
+
+/// Convert multiple sidebars to TypeScript code
+fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: bool) -> String {
+    let mut output = String::new();
+    
+    output.push_str("// This file is auto-generated by cargo-doc-md\n");
+    output.push_str("// Do not edit manually - this file will be regenerated\n\n");
+    output.push_str("import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';\n\n");
+    output.push_str("// Rust API documentation sidebars\n");
+    output.push_str("// Each module has its own sidebar for better navigation\n");
+    output.push_str("// Import this in your docusaurus.config.ts:\n");
+    output.push_str("// import { rustSidebars } from './sidebars-rust';\n");
+    output.push_str("//\n");
+    output.push_str("// Then configure in docs plugin:\n");
+    output.push_str("// docs: {\n");
+    output.push_str("//   sidebarPath: './sidebars.ts',\n");
+    output.push_str("//   async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {\n");
+    output.push_str("//     const items = await defaultSidebarItemsGenerator(args);\n");
+    output.push_str("//     const docPath = args.item.id;\n");
+    output.push_str("//     // Use module-specific sidebar if available\n");
+    output.push_str("//     for (const [path, sidebar] of Object.entries(rustSidebars)) {\n");
+    output.push_str("//       if (docPath.startsWith(path + '/')) {\n");
+    output.push_str("//         return sidebar;\n");
+    output.push_str("//       }\n");
+    output.push_str("//     }\n");
+    output.push_str("//     return items;\n");
+    output.push_str("//   },\n");
+    output.push_str("// }\n\n");
+    
+    output.push_str("export const rustSidebars: Record<string, any[]> = {\n");
+    
+    // Sort by path for consistent output
+    let mut sorted_paths: Vec<_> = all_sidebars.keys().cloned().collect();
+    sorted_paths.sort();
+    
+    let first_path = sorted_paths.first().cloned();
+    
+    for path in &sorted_paths {
+        let items = &all_sidebars[path];
+        output.push_str(&format!("  '{}': [\n", path));
+        for item in items {
+            output.push_str(&format_sidebar_item(item, 2));
+        }
+        output.push_str("  ],\n");
+    }
+    
+    output.push_str("};\n\n");
+    
+    // Also export the main sidebar for backward compatibility
+    if let Some(first_path) = first_path {
+        output.push_str("// Main API documentation sidebar (for backward compatibility)\n");
+        output.push_str("export const rustApiDocumentation = rustSidebars['");
+        output.push_str(&first_path);
+        output.push_str("'];\n\n");
+        output.push_str("// Or use as a single category:\n");
+        output.push_str("export const rustApiCategory = {\n");
+        output.push_str("  type: 'category' as const,\n");
+        output.push_str("  label: 'API Documentation',\n");
+        output.push_str("  collapsed: false,\n");
+        output.push_str("  items: rustApiDocumentation,\n");
+        output.push_str("};\n");
+    }
+    
+    output
+}
+
+/// Convert sidebar items to TypeScript code
+fn sidebar_to_js(items: &[SidebarItem]) -> String {
+    let mut output = String::new();
+    
+    output.push_str("// This file is auto-generated by cargo-doc-md\n");
+    output.push_str("// Do not edit manually - this file will be regenerated\n\n");
+    output.push_str("import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';\n\n");
+    output.push_str("// Rust API documentation sidebar items\n");
+    output.push_str("// Import this in your main sidebars.ts file:\n");
+    output.push_str("// import {rustApiDocumentation} from './sidebars-rust';\n");
+    output.push_str("//\n");
+    output.push_str("// Then add it to your sidebar:\n");
+    output.push_str("// tutorialSidebar: [\n");
+    output.push_str("//   'intro',\n");
+    output.push_str("//   ...rustApiDocumentation,\n");
+    output.push_str("// ]\n\n");
+    output.push_str("export const rustApiDocumentation = [\n");
+    
+    for item in items {
+        output.push_str(&format_sidebar_item(item, 1));
+    }
+    
+    output.push_str("];\n\n");
+    output.push_str("// Or use as a single category:\n");
+    output.push_str("export const rustApiCategory = {\n");
+    output.push_str("  type: 'category' as const,\n");
+    output.push_str("  label: 'API Documentation',\n");
+    output.push_str("  collapsed: false,\n");
+    output.push_str("  items: rustApiDocumentation,\n");
+    output.push_str("};\n");
+    
+    output
+}
+
+/// Format a single sidebar item with proper indentation
+fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
+    let indent_str = "  ".repeat(indent);
+    
+    match item {
+        SidebarItem::Doc { id, label, custom_props } => {
+            // Remove .md extension if present and convert to doc ID
+            let doc_id = id.trim_end_matches(".md").replace(".md", "");
+            
+            // If we have a label or customProps, create an object with type, id, label, and optional className
+            if label.is_some() || custom_props.is_some() {
+                let mut output = format!("{}{{ type: 'doc', id: '{}'", indent_str, doc_id);
+                
+                if let Some(label_text) = label {
+                    output.push_str(&format!(", label: '{}'", label_text));
+                }
+                
+                // Output className directly, not wrapped in customProps
+                if let Some(class_name) = custom_props {
+                    output.push_str(&format!(", className: '{}'", class_name));
+                }
+                
+                output.push_str(" },\n");
+                output
+            } else {
+                // Just a string reference (Docusaurus will infer the label)
+                format!("{}'{doc_id}',\n", indent_str)
+            }
+        }
+        SidebarItem::Link { href, label, custom_props } => {
+            // Generate a link item with href
+            let mut output = format!("{}{{ type: 'link', href: '{}', label: '{}'", indent_str, href, label);
+            if let Some(class_name) = custom_props {
+                output.push_str(&format!(", className: '{}'", class_name));
+            }
+            output.push_str(" },\n");
+            output
+        }
+        SidebarItem::Category { label, items, collapsed, link } => {
+            let mut output = String::new();
+            output.push_str(&format!("{}{{\n", indent_str));
+            output.push_str(&format!("{}  type: 'category',\n", indent_str));
+            output.push_str(&format!("{}  label: '{}',\n", indent_str, label));
+            
+            // Add link if present (makes the category clickable)
+            if let Some(link_path) = link {
+                let doc_id = link_path.trim_end_matches(".md").replace(".md", "");
+                output.push_str(&format!("{}  link: {{\n", indent_str));
+                output.push_str(&format!("{}    type: 'doc',\n", indent_str));
+                output.push_str(&format!("{}    id: '{}',\n", indent_str, doc_id));
+                output.push_str(&format!("{}  }},\n", indent_str));
+            }
+            
+            output.push_str(&format!("{}  collapsed: {},\n", indent_str, collapsed));
+            output.push_str(&format!("{}  items: [\n", indent_str));
+            
+            for sub_item in items {
+                output.push_str(&format_sidebar_item(sub_item, indent + 2));
+            }
+            
+            output.push_str(&format!("{}  ],\n", indent_str));
+            output.push_str(&format!("{}}},\n", indent_str));
+            output
+        }
+    }
 }
 
 #[cfg(test)]
