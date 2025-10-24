@@ -78,7 +78,7 @@ struct Cli {
     #[arg(
         long,
         value_name = "URL",
-        help = "URL for the 'Back to parent' link in root crate sidebars (e.g., '/docs/runtime/guides/runtime')"
+        help = "URL for the 'Go back' link in root crate sidebars (e.g., '/docs/runtime/guides/runtime')"
     )]
     sidebar_root_link: Option<String>,
 }

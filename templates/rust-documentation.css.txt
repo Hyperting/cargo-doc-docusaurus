@@ -170,6 +170,30 @@ div:has(> a.rust-type) {
   opacity: 1;
 }
 
+/* Crate link with version (rustdoc style) */
+.menu__link.rust-sidebar-crate-link {
+  padding: 0.75em 0.75em !important;
+  margin-bottom: 1em;
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  font-weight: 600;
+  font-size: 1.05em;
+  white-space: pre-line !important;
+  line-height: 1.6;
+}
+
+/* Make version text smaller and less prominent */
+.menu__link.rust-sidebar-crate-link {
+  font-size: 1.1em;
+}
+
+[data-theme='dark'] .menu__link.rust-sidebar-crate-link {
+  color: var(--ifm-font-color-base) !important;
+}
+
+[data-theme='light'] .menu__link.rust-sidebar-crate-link {
+  color: var(--ifm-font-color-base) !important;
+}
+
 /* Apply colors to sidebar items */
 .menu__link.rust-mod {
   color: var(--rust-color-module) !important;

@@ -234,7 +234,7 @@ fn merge_rust_sidebars(existing: &str, new_content: &str) -> Result<String> {
         }
     }
     
-    // Generate root sidebar that includes all crate-level sidebars
+    // Generate rootRustSidebar with all workspace crates
     let root_sidebar = generate_root_sidebar(&merged_entries);
     
     // Construct the final output
@@ -245,54 +245,64 @@ fn merge_rust_sidebars(existing: &str, new_content: &str) -> Result<String> {
     result.push_str(footer);
     
     // Append the root sidebar export
-    result.push_str("\n\n// Root sidebar that includes all crates\n");
-    result.push_str("export const rootRustSidebar = ");
+    result.push_str("\n\n// Root sidebar with links to all crates (for main navigation)\n");
+    result.push_str("export const rootRustSidebar = [\n");
     result.push_str(&root_sidebar);
-    result.push_str(";\n");
+    result.push_str("];\n");
     
     Ok(result)
 }
 
 /// Generate a root sidebar that includes all crates with their content
+/// This function parses the merged sidebar content to extract root crate information
 fn generate_root_sidebar(merged_entries: &str) -> String {
-    use std::collections::HashSet;
+    let mut output = String::new();
     
-    // Extract all crate-level keys (exactly 3 segments: base/path/crate_name)
-    let mut crate_keys: HashSet<String> = HashSet::new();
+    // Find all lines with rustCrateTitle: true to identify root crates
+    // These lines have the format:
+    // { type: 'doc', id: 'runtime/rust/crate_name/index', label: 'crate_name', customProps: { rustCrateTitle: true, ... } }
+    
+    use std::collections::HashSet;
+    let mut seen_crates: HashSet<String> = HashSet::new();
+    let mut crate_entries: Vec<(String, String)> = Vec::new(); // (doc_id, label)
     
     for line in merged_entries.lines() {
         let trimmed = line.trim();
-        if trimmed.starts_with('\'') && trimmed.contains("': [") {
-            // Extract the key between quotes
-            if let Some(end_quote) = trimmed[1..].find('\'') {
-                let key = &trimmed[1..=end_quote];
-                let segments: Vec<&str> = key.split('/').collect();
-                
-                // Only include keys with exactly 3 segments (e.g., runtime/rust/crate_name)
-                // These are the crate-level sidebars
-                if segments.len() == 3 {
-                    crate_keys.insert(key.to_string());
+        
+        // Look for lines containing rustCrateTitle: true
+        if trimmed.contains("rustCrateTitle: true") && trimmed.contains("type: 'doc'") {
+            // Extract the doc id and label from the line
+            // Format: { type: 'doc', id: 'path/to/crate/index', label: 'crate_name', customProps: ...
+            
+            if let Some(id_start) = trimmed.find("id: '") {
+                if let Some(id_end) = trimmed[id_start + 5..].find('\'') {
+                    let doc_id = &trimmed[id_start + 5..id_start + 5 + id_end];
+                    
+                    // Extract label
+                    if let Some(label_start) = trimmed.find("label: '") {
+                        if let Some(label_end) = trimmed[label_start + 8..].find('\'') {
+                            let label = &trimmed[label_start + 8..label_start + 8 + label_end];
+                            
+                            // Only add each crate once (in case it appears in multiple sidebars)
+                            if seen_crates.insert(doc_id.to_string()) {
+                                crate_entries.push((doc_id.to_string(), label.to_string()));
+                            }
+                        }
+                    }
                 }
             }
         }
     }
     
-    // Sort crates
-    let mut sorted_crates: Vec<_> = crate_keys.into_iter().collect();
-    sorted_crates.sort();
+    // Sort by doc_id for consistent output
+    crate_entries.sort_by(|a, b| a.0.cmp(&b.0));
     
-    // Generate sidebar structure with simple links for each crate (not categories)
-    let mut sidebar = String::from("[\n");
-    
-    for crate_key in sorted_crates {
-        let crate_name = crate_key.split('/').last().unwrap_or(&crate_key);
-        
-        sidebar.push_str(&format!(
-            "  {{\n    type: 'doc',\n    id: '{}/index',\n    label: '{}',\n  }},\n",
-            crate_key, crate_name
+    for (doc_id, label) in crate_entries {
+        output.push_str(&format!(
+            "  {{ type: 'doc', id: '{}', label: '{}', className: 'rust-mod' }},\n",
+            doc_id, label
         ));
     }
     
-    sidebar.push_str("]");
-    sidebar
+    output
 }

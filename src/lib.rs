@@ -48,7 +48,7 @@ pub struct ConversionOptions<'a> {
     pub sidebarconfig_collapsed: bool,
     /// Custom path for the sidebar configuration file
     pub sidebar_output: Option<&'a Path>,
-    /// URL for the 'Back to parent' link in root crate sidebars
+    /// URL for the 'Go back' link in root crate sidebars
     pub sidebar_root_link: Option<&'a str>,
 }
 

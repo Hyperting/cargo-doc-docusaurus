@@ -31,7 +31,7 @@ enum SidebarItem {
     Doc {
         id: String,
         label: Option<String>,
-        custom_props: Option<String>, // JSON string for customProps field
+        custom_props: Option<String>, // Can be either className or customProps JSON
     },
     /// A link item (for dynamic sidebars)
     Link {
@@ -45,6 +45,11 @@ enum SidebarItem {
         items: Vec<SidebarItem>,
         collapsed: bool,
         link: Option<String>, // Optional link to make category clickable
+    },
+    /// An HTML item for custom components (like RustCrateLink)
+    Html {
+        value: String,
+        default_style: bool,
     },
 }
 
@@ -2576,7 +2581,7 @@ fn generate_combined_crate_and_root_content(
         .or_else(|| base_path.strip_prefix("/docs"))
         .or_else(|| base_path.strip_prefix("/"))
         .unwrap_or(&base_path);
-    let sidebar_key = format!("{}/{}", base_path_for_sidebar, crate_name);
+    let sidebar_key = format!("{}/{}", base_path_for_sidebar, crate_name).replace("/", "_");
 
     // Add frontmatter with displayed_sidebar
     output.push_str("---\n");
@@ -2843,10 +2848,10 @@ fn generate_individual_pages(
                     .or_else(|| base_path.strip_prefix("/"))
                     .unwrap_or(&base_path);
                 let sidebar_key = if _module_name == _crate_name {
-                    format!("{}/{}", base_path_for_sidebar, _crate_name)
+                    format!("{}/{}", base_path_for_sidebar, _crate_name).replace("/", "_")
                 } else {
                     let module_path = _module_name.replace("::", "/");
-                    format!("{}/{}", base_path_for_sidebar, module_path)
+                    format!("{}/{}", base_path_for_sidebar, module_path).replace("/", "_")
                 };
                 
                 let frontmatter = format!("---\ntitle: \"{}\"\ndisplayed_sidebar: '{}'\n---\n\nimport RustCode from '@site/src/components/RustCode';\nimport Link from '@docusaurus/Link';\n\n", title, sidebar_key);
@@ -2904,10 +2909,10 @@ fn generate_module_overview(
         .or_else(|| base_path.strip_prefix("/"))
         .unwrap_or(&base_path);
     let sidebar_key = if module_name == crate_name {
-        format!("{}/{}", base_path_for_sidebar, crate_name)
+        format!("{}/{}", base_path_for_sidebar, crate_name).replace("/", "_")
     } else {
         let module_path = module_name.replace("::", "/");
-        format!("{}/{}", base_path_for_sidebar, module_path)
+        format!("{}/{}", base_path_for_sidebar, module_path).replace("/", "_")
     };
 
     // Add FrontMatter for Docusaurus with the module name as title and sidebar
@@ -3232,6 +3237,7 @@ fn generate_all_sidebars(
         sidebar_prefix,
         sidebarconfig_collapsed,
         true, // is_root
+        &crate_data.crate_version,
     );
     
     let root_path = if sidebar_prefix.is_empty() {
@@ -3255,6 +3261,7 @@ fn generate_all_sidebars(
             sidebar_prefix,
             sidebarconfig_collapsed,
             false, // not root
+            &crate_data.crate_version,
         );
         
         // Convert module_key from Rust path (::) to file path (/)
@@ -3280,6 +3287,7 @@ fn generate_sidebar_for_module(
     sidebar_prefix: &str,
     sidebarconfig_collapsed: bool,
     is_root: bool,
+    crate_version: &Option<String>,
 ) -> Vec<SidebarItem> {
     let module_items = modules.get(module_key).cloned().unwrap_or_default();
     
@@ -3288,7 +3296,7 @@ fn generate_sidebar_for_module(
     
     let mut sidebar_items = Vec::new();
     
-    // Add "Back to parent" link
+    // Add "Go back" link and crate title for root crates, or just crate title for modules
     if is_root {
         // For root crate: use the configured sidebar_root_link if available
         let sidebar_root_link = SIDEBAR_ROOT_LINK.with(|srl| srl.borrow().clone());
@@ -3296,56 +3304,64 @@ fn generate_sidebar_for_module(
         if let Some(link) = sidebar_root_link {
             sidebar_items.push(SidebarItem::Link {
                 href: link,
-                label: "← Back to parent".to_string(),
+                label: "← Go back".to_string(),
                 custom_props: Some("rust-sidebar-back-link".to_string()),
             });
         }
-    } else {
-        // For submodules: link to parent module
-        let parent_path = if module_key.contains("::") {
-            // Has parent module - link to parent
-            let parent = module_key.rsplitn(2, "::").nth(1).unwrap();
-            let parent_path = parent.replace("::", "/");
-            if sidebar_prefix.is_empty() {
-                parent_path
-            } else {
-                format!("{}/{}", sidebar_prefix, parent_path)
-            }
+        
+        // Add crate title with version for root crates
+        // The title itself is clickable and links to the crate index
+        let crate_root_path = if sidebar_prefix.is_empty() {
+            format!("{}/index", _crate_name)
         } else {
-            // Root module - link back to crate root
-            if sidebar_prefix.is_empty() {
-                module_key.to_string()
-            } else {
-                format!("{}/{}", sidebar_prefix, module_key)
-            }
+            format!("{}/{}/index", sidebar_prefix, _crate_name)
         };
         
-        sidebar_items.push(SidebarItem::Link {
-            href: format!("/docs/{}", parent_path),
-            label: "← Back to parent".to_string(),
-            custom_props: Some("rust-sidebar-back-link".to_string()),
+        // Use customProps to pass crate name and version to a custom sidebar component
+        sidebar_items.push(SidebarItem::Doc {
+            id: crate_root_path,
+            label: Some(_crate_name.to_string()), // Fallback label
+            custom_props: Some(format!(
+                "{{ rustCrateTitle: true, crateName: '{}', version: '{}' }}",
+                _crate_name,
+                crate_version.as_deref().unwrap_or("")
+            )),
+        });
+        
+        // For root crate, the title is already clickable, so we don't add a separate Overview
+    } else {
+        // For submodules: show crate name with version (rustdoc style)
+        // This links to the crate root
+        let crate_root_path = if sidebar_prefix.is_empty() {
+            format!("{}/index", _crate_name)
+        } else {
+            format!("{}/{}/index", sidebar_prefix, _crate_name)
+        };
+        
+        // Use customProps to pass crate name and version to a custom sidebar component
+        sidebar_items.push(SidebarItem::Doc {
+            id: crate_root_path,
+            label: Some(_crate_name.to_string()), // Fallback label
+            custom_props: Some(format!(
+                "{{ rustCrateTitle: true, crateName: '{}', version: '{}' }}",
+                _crate_name,
+                crate_version.as_deref().unwrap_or("")
+            )),
+        });
+        
+        // Add Overview link to the submodule's index
+        let module_index_path = if sidebar_prefix.is_empty() {
+            format!("{}/index", module_path)
+        } else {
+            format!("{}/{}/index", sidebar_prefix, module_path)
+        };
+        
+        sidebar_items.push(SidebarItem::Doc {
+            id: module_index_path,
+            label: Some("Overview".to_string()),
+            custom_props: Some("rust-mod".to_string()),
         });
     }
-    
-    // Add Overview link to the module/crate index
-    let module_index_path = if sidebar_prefix.is_empty() {
-        format!("{}/index", module_path)
-    } else {
-        format!("{}/{}/index", sidebar_prefix, module_path)
-    };
-    
-    // Label: for root crate use crate name, for submodules use "Overview"
-    let overview_label = if is_root {
-        module_key.to_string() // Use crate name as label
-    } else {
-        "Overview".to_string()
-    };
-    
-    sidebar_items.push(SidebarItem::Doc {
-        id: module_index_path,
-        label: Some(overview_label),
-        custom_props: Some("rust-mod".to_string()),
-    });
     
     // Categorize items by type
     let mut by_type: HashMap<&str, Vec<&Item>> = HashMap::new();
@@ -3496,12 +3512,7 @@ fn generate_sidebar_for_module(
                     format!("{}/{}/index", sidebar_prefix, sibling_path)
                 };
                 
-                // Highlight current module
-                let label = if sibling_key == module_key {
-                    format!("{} (current)", sibling_name)
-                } else {
-                    sibling_name.to_string()
-                };
+                let label = sibling_name.to_string();
                 
                 sibling_items.push(SidebarItem::Doc {
                     id: sibling_doc_id,
@@ -3535,11 +3546,7 @@ fn generate_sidebar_for_module(
                 };
                 
                 // Highlight current crate
-                let label = if &normalized_crate_name == module_key {
-                    format!("{} (current)", crate_name)
-                } else {
-                    crate_name.to_string()
-                };
+                let label = crate_name.to_string();
                 
                 crate_items.push(SidebarItem::Doc {
                     id: crate_doc_id,
@@ -3554,11 +3561,13 @@ fn generate_sidebar_for_module(
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
+                    SidebarItem::Html { .. } => "", // HTML items don't have sortable labels
                 };
                 let label_b = match b {
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
+                    SidebarItem::Html { .. } => "", // HTML items don't have sortable labels
                 };
                 label_a.cmp(label_b)
             });
@@ -3803,7 +3812,9 @@ fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: 
     
     for path in &sorted_paths {
         let items = &all_sidebars[path];
-        output.push_str(&format!("  '{}': [\n", path));
+        // Convert path with slashes to valid sidebar key (replace / with _)
+        let sidebar_key = path.replace("/", "_");
+        output.push_str(&format!("  '{}': [\n", sidebar_key));
         for item in items {
             output.push_str(&format_sidebar_item(item, 2));
         }
@@ -3812,11 +3823,15 @@ fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: 
     
     output.push_str("};\n\n");
     
+    // NOTE: rootRustSidebar is generated during merge in writer.rs
+    // to include all crates from the workspace
+    
     // Also export the main sidebar for backward compatibility
     if let Some(first_path) = first_path {
+        let first_sidebar_key = first_path.replace("/", "_");
         output.push_str("// Main API documentation sidebar (for backward compatibility)\n");
         output.push_str("export const rustApiDocumentation = rustSidebars['");
-        output.push_str(&first_path);
+        output.push_str(&first_sidebar_key);
         output.push_str("'];\n\n");
         output.push_str("// Or use as a single category:\n");
         output.push_str("export const rustApiCategory = {\n");
@@ -3873,7 +3888,7 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
             // Remove .md extension if present and convert to doc ID
             let doc_id = id.trim_end_matches(".md").replace(".md", "");
             
-            // If we have a label or customProps, create an object with type, id, label, and optional className
+            // If we have a label or customProps, create an object with type, id, label, and optional className/customProps
             if label.is_some() || custom_props.is_some() {
                 let mut output = format!("{}{{ type: 'doc', id: '{}'", indent_str, doc_id);
                 
@@ -3881,9 +3896,15 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
                     output.push_str(&format!(", label: '{}'", label_text));
                 }
                 
-                // Output className directly, not wrapped in customProps
-                if let Some(class_name) = custom_props {
-                    output.push_str(&format!(", className: '{}'", class_name));
+                // Determine if custom_props is className or customProps based on format
+                if let Some(props) = custom_props {
+                    if props.starts_with('{') {
+                        // It's customProps JSON object
+                        output.push_str(&format!(", customProps: {}", props));
+                    } else {
+                        // It's a className string
+                        output.push_str(&format!(", className: '{}'", props));
+                    }
                 }
                 
                 output.push_str(" },\n");
@@ -3896,8 +3917,12 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
         SidebarItem::Link { href, label, custom_props } => {
             // Generate a link item with href
             let mut output = format!("{}{{ type: 'link', href: '{}', label: '{}'", indent_str, href, label);
-            if let Some(class_name) = custom_props {
-                output.push_str(&format!(", className: '{}'", class_name));
+            if let Some(props) = custom_props {
+                if props.starts_with('{') {
+                    output.push_str(&format!(", customProps: {}", props));
+                } else {
+                    output.push_str(&format!(", className: '{}'", props));
+                }
             }
             output.push_str(" },\n");
             output
@@ -3925,6 +3950,15 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
             }
             
             output.push_str(&format!("{}  ],\n", indent_str));
+            output.push_str(&format!("{}}},\n", indent_str));
+            output
+        }
+        SidebarItem::Html { value, default_style } => {
+            // Generate an HTML item for custom React components
+            let mut output = format!("{}{{\n", indent_str);
+            output.push_str(&format!("{}  type: 'html',\n", indent_str));
+            output.push_str(&format!("{}  value: `{}`,\n", indent_str, value));
+            output.push_str(&format!("{}  defaultStyle: {},\n", indent_str, default_style));
             output.push_str(&format!("{}}},\n", indent_str));
             output
         }

@@ -77,8 +77,7 @@ export default function RustDocSidebar(props: Props): JSX.Element {
   };
   
   const sidebarKey = findBestSidebar();
-  
-  const sidebarKey = findBestSidebar();
+
   
   // If we found a specific Rust sidebar for this path, use it
   if (sidebarKey && rustSidebars[sidebarKey]) {
@@ -93,7 +92,7 @@ export default function RustDocSidebar(props: Props): JSX.Element {
       const sidebarWithHeader = [
         {
           type: 'link',
-          label: '← Back to parent',
+          label: '← Go back',
           href: `/docs/${parentPath}`,
           className: 'rust-sidebar-back-link',
         },
