@@ -2848,7 +2848,9 @@ fn generate_individual_pages(
                     .or_else(|| base_path.strip_prefix("/"))
                     .unwrap_or(&base_path);
                 let sidebar_key = if _module_name == _crate_name {
-                    format!("{}/{}", base_path_for_sidebar, _crate_name).replace("/", "_")
+                    // For items in the crate root, use "_items" suffix
+                    // to match the sidebar generated for leaf items of the crate
+                    format!("{}/{}_items", base_path_for_sidebar, _crate_name).replace("/", "_")
                 } else {
                     let module_path = _module_name.replace("::", "/");
                     format!("{}/{}", base_path_for_sidebar, module_path).replace("/", "_")
@@ -2908,11 +2910,35 @@ fn generate_module_overview(
         .or_else(|| base_path.strip_prefix("/docs"))
         .or_else(|| base_path.strip_prefix("/"))
         .unwrap_or(&base_path);
-    let sidebar_key = if module_name == crate_name {
-        format!("{}/{}", base_path_for_sidebar, crate_name).replace("/", "_")
+    
+    // For module overview pages, use the PARENT module's sidebar
+    // This way the module page shows "In <parent>" with siblings
+    let sidebar_module = if module_name == crate_name {
+        // Root module uses its own sidebar
+        crate_name.to_string()
+    } else if module_name.contains("::") {
+        // Sub-module uses parent's sidebar
+        module_name.rsplitn(2, "::").nth(1).unwrap().to_string()
     } else {
-        let module_path = module_name.replace("::", "/");
-        format!("{}/{}", base_path_for_sidebar, module_path).replace("/", "_")
+        // Top-level module (crate_name::module) uses crate's sidebar
+        crate_name.to_string()
+    };
+    
+    let sidebar_key = if sidebar_module == crate_name {
+        // If this module's parent is the crate root, use the "_modules" variant
+        // which shows "In <crate>" with crate's modules, not "Crates"
+        if module_name == crate_name {
+            // This IS the crate root page itself - use the regular sidebar
+            format!("{}/{}", base_path_for_sidebar, crate_name).replace("/", "_")
+        } else {
+            // This is a child of the crate root - use the "_modules" variant
+            format!("{}/{}_modules", base_path_for_sidebar, crate_name).replace("/", "_")
+        }
+    } else {
+        // This module's parent is another module (not the crate)
+        // Use the parent's "_children" sidebar which shows the parent's contents
+        let module_path = sidebar_module.replace("::", "/");
+        format!("{}/{}_children", base_path_for_sidebar, module_path).replace("/", "_")
     };
 
     // Add FrontMatter for Docusaurus with the module name as title and sidebar
@@ -3228,16 +3254,18 @@ fn generate_all_sidebars(
         &base_path
     };
     
-    // Generate sidebar for the root crate (this shows in rootRustSidebar)
-    let root_sidebar = generate_sidebar_for_module(
+    // Generate TWO sidebars for the root crate:
+    // 1. With is_root=true (shows "Crates" section) - used by the crate's own page
+    let root_sidebar_for_crate = generate_sidebar_for_module(
         crate_name,
         &crate_name.to_string(),
         modules,
         crate_data,
         sidebar_prefix,
         sidebarconfig_collapsed,
-        true, // is_root
+        true, // is_root - shows "Crates" section
         &crate_data.crate_version,
+        false, // show_all_parent_items - false for modules
     );
     
     let root_path = if sidebar_prefix.is_empty() {
@@ -3245,7 +3273,24 @@ fn generate_all_sidebars(
     } else {
         format!("{}/{}", sidebar_prefix, crate_name)
     };
-    all_sidebars.insert(root_path, root_sidebar);
+    all_sidebars.insert(root_path.clone(), root_sidebar_for_crate);
+    
+    // 2. With is_root=false (shows crate's modules) - used by the crate's child modules
+    let root_sidebar_for_modules = generate_sidebar_for_module(
+        crate_name,
+        &crate_name.to_string(),
+        modules,
+        crate_data,
+        sidebar_prefix,
+        sidebarconfig_collapsed,
+        false, // is_root=false - shows "In <parent>" with crate's modules
+        &crate_data.crate_version,
+        false, // show_all_parent_items - false for modules
+    );
+    
+    // Use a different key for this sidebar (add "_modules" suffix)
+    let root_path_for_modules = format!("{}_modules", root_path);
+    all_sidebars.insert(root_path_for_modules, root_sidebar_for_modules);
     
     // Generate sidebar for each submodule (for dynamic sidebar when entering modules)
     for module_key in modules.keys() {
@@ -3262,16 +3307,109 @@ fn generate_all_sidebars(
             sidebarconfig_collapsed,
             false, // not root
             &crate_data.crate_version,
+            false, // show_all_parent_items - false for modules
         );
         
         // Convert module_key from Rust path (::) to file path (/)
         let module_path_normalized = module_key.replace("::", "/");
         let module_path = if sidebar_prefix.is_empty() {
-            module_path_normalized
+            module_path_normalized.clone()
         } else {
             format!("{}/{}", sidebar_prefix, module_path_normalized)
         };
-        all_sidebars.insert(module_path, sidebar);
+        all_sidebars.insert(module_path.clone(), sidebar);
+        
+        // Check if this module has sub-modules (direct children)
+        let has_submodules = modules.keys().any(|key| {
+            if let Some(stripped) = key.strip_prefix(&format!("{}::", module_key)) {
+                // Make sure it's a direct child (no more ::)
+                !stripped.contains("::")
+            } else {
+                false
+            }
+        });
+        
+        // If this module has sub-modules, generate an additional sidebar for them
+        // This sidebar shows "In <module>" with the module's own contents
+        // Similar to how leaf items get a sidebar showing their parent module's contents
+        if has_submodules {
+            let submodule_sidebar = generate_sidebar_for_module(
+                crate_name,
+                module_key, // Use this module as the "parent"
+                modules,
+                crate_data,
+                sidebar_prefix,
+                sidebarconfig_collapsed,
+                false,
+                &crate_data.crate_version,
+                true, // show_all_parent_items = true to show THIS module's contents
+            );
+            
+            // Use "_children" suffix to distinguish from the module's own sidebar
+            let submodule_sidebar_key = format!("{}_children", module_path.replace("/", "_"));
+            all_sidebars.insert(submodule_sidebar_key, submodule_sidebar);
+        }
+    }
+    
+    // Generate sidebar for each leaf item (struct, enum, trait, fn, etc.)
+    // Each item gets its own sidebar showing "In <parent_module>" with all parent items
+    // BUT: all items in the same module share the same sidebar!
+    // So we generate one sidebar per module (not per item) and use the module path as key
+    let mut processed_modules = std::collections::HashSet::new();
+    
+    for (module_key, items) in modules {
+        // Skip if we already processed this module
+        if processed_modules.contains(module_key) {
+            continue;
+        }
+        
+        // Check if this module has any non-module items
+        let has_leaf_items = items.iter().any(|(_, item)| {
+            !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_))
+        });
+        
+        if !has_leaf_items {
+            continue; // No leaf items, skip
+        }
+        
+        processed_modules.insert(module_key.clone());
+        
+        // Generate sidebar for this module (to be used by all leaf items in it)
+        let parent_module = module_key;
+        
+        eprintln!("[DEBUG] Generating leaf items sidebar for module_key: {}", module_key);
+        
+        let item_sidebar = generate_sidebar_for_module(
+            crate_name,
+            parent_module,
+            modules,
+            crate_data,
+            sidebar_prefix,
+            sidebarconfig_collapsed,
+            false, // is_root = false - leaf items always show "In <module>", never "Crates"
+            &crate_data.crate_version,
+            true, // show_all_parent_items - true for leaf items (struct, enum, etc.)
+        );
+        
+        // The sidebar key is the module path (not the item path!)
+        // This matches what's written in the frontmatter of item files
+        let parent_module_path = parent_module.replace("::", "/");
+        
+        let sidebar_key = if sidebar_prefix.is_empty() {
+            parent_module_path.clone()
+        } else {
+            format!("{}/{}", sidebar_prefix, parent_module_path)
+        };
+        
+        // If this is for leaf items of the crate root, add "_items" suffix
+        // to avoid collision with the crate's own sidebar (which shows "Crates")
+        let sidebar_key = if parent_module == crate_name {
+            format!("{}_items", sidebar_key.replace("/", "_"))
+        } else {
+            sidebar_key
+        };
+        
+        all_sidebars.insert(sidebar_key, item_sidebar);
     }
     
     // Convert to TypeScript with multiple sidebars
@@ -3288,6 +3426,7 @@ fn generate_sidebar_for_module(
     sidebarconfig_collapsed: bool,
     is_root: bool,
     crate_version: &Option<String>,
+    show_all_parent_items: bool, // New parameter: if true, show all items in parent module (for leaf items)
 ) -> Vec<SidebarItem> {
     let module_items = modules.get(module_key).cloned().unwrap_or_default();
     
@@ -3349,18 +3488,28 @@ fn generate_sidebar_for_module(
             )),
         });
         
+        // Module title commented out - the overview is already on the right side
+        // We don't need a separate "Overview" link in the sidebar
+        /*
         // Add Overview link to the submodule's index
+        // Use customProps to render it as a module title (similar to crate title but without version)
         let module_index_path = if sidebar_prefix.is_empty() {
             format!("{}/index", module_path)
         } else {
             format!("{}/{}/index", sidebar_prefix, module_path)
         };
         
+        let module_display_name = module_key.split("::").last().unwrap_or(module_key);
+        
         sidebar_items.push(SidebarItem::Doc {
             id: module_index_path,
-            label: Some("Overview".to_string()),
-            custom_props: Some("rust-mod".to_string()),
+            label: Some(module_display_name.to_string()),
+            custom_props: Some(format!(
+                "{{ rustModuleTitle: true, moduleName: '{}' }}",
+                module_display_name
+            )),
         });
+        */
     }
     
     // Categorize items by type
@@ -3393,7 +3542,12 @@ fn generate_sidebar_for_module(
         "Traits", "Functions", "Type Aliases", "Constants", "Statics",
     ];
     
-    for type_name in type_order {
+    // Rustdoc-style: Do NOT show categories in sidebars
+    // Items are only shown in the "In <parent>" section
+    // This code block is commented out to match rustdoc behavior
+    /*
+    if !is_root {
+        for type_name in type_order {
         if let Some(items_of_type) = by_type.get(type_name) {
             let mut category_items = Vec::new();
             
@@ -3465,71 +3619,207 @@ fn generate_sidebar_for_module(
         }
     } // Close if let Some(items_of_type)
 } // Close for type_name in type_order
+    } // Close if !is_root
+    */
     
-    // Add "In crate <parent_path>" section at the end for submodules (rustdoc style)
-    // Or "Crates" section for root crates
-    if !is_root {
-        let (parent_module, siblings_label) = if module_key.contains("::") {
-            // Has parent module - show siblings
+    // Add "In <parent>" section for ALL modules and crates (rustdoc style)
+    // - For crate root (is_root = true): show workspace sibling crates
+    // - For modules: show "In <parent>" with parent's content
+    // - For leaf items: show "In <module>" with module's content
+    
+    // Determine which module's items to show based on show_all_parent_items and is_root:
+    let (parent_module, siblings_label) = if show_all_parent_items {
+            // For leaf items: show all items from the current module (not parent)
+            eprintln!("[DEBUG] Leaf item sidebar for module_key: {}", module_key);
+            (Some(module_key), format!("In {}", module_key))
+        } else if is_root {
+        // For root crate with is_root=true: show ONLY workspace crates, not the crate's modules
+        // The workspace crates section is added separately below
+        eprintln!("[DEBUG] Root crate sidebar (is_root=true) for module_key: {}", module_key);
+        (None, String::new()) // Don't collect any modules, only show "Crates" section
+    } else if module_key == _crate_name {
+        // For root crate with is_root=false: show crate's own modules
+        // This is used by the crate's child modules to navigate
+        eprintln!("[DEBUG] Root crate sidebar (is_root=false) for module_key: {}", module_key);
+        (Some(module_key), format!("In {}", _crate_name))
+    } else if module_key.contains("::") {
+            // For modules: has parent module - show siblings
             let parent = module_key.rsplitn(2, "::").nth(1).unwrap();
+            eprintln!("[DEBUG] Module sidebar for module_key: {}, parent: {}", module_key, parent);
             (Some(parent), format!("In {}", parent))
         } else {
-            // Root module of crate - show siblings in crate
+            // For top-level modules: show siblings in crate
+            eprintln!("[DEBUG] Top-level module sidebar for module_key: {}", module_key);
             (None, format!("In crate {}", _crate_name))
         };
         
-        // Find all sibling modules (modules with the same parent)
-        let mut sibling_modules: Vec<&String> = modules
+        // Rustdoc-style: Group parent items by type (Modules, Structs, Enums, etc.)
+        // Use the same type_order as before
+        let type_order = vec![
+            "Modules", "Macros", "Structs", "Enums", "Traits", "Functions", 
+            "Type Aliases", "Constants", "Statics", "Primitives"
+        ];
+        
+        // Group items by type using HashMap
+        use std::collections::HashMap;
+        let mut items_by_type: HashMap<&str, Vec<SidebarItem>> = HashMap::new();
+        
+        // For both modules and leaf items, we need to add child modules
+        // - For modules: children of the parent module (siblings of current module)
+        // - For leaf items: children of the current module (submodules)
+        let child_modules: Vec<&String> = modules
             .keys()
             .filter(|key| {
-                if let Some(parent) = parent_module {
-                    // Check if this module has the same parent
-                    if let Some(key_parent) = key.rsplitn(2, "::").nth(1) {
-                        key_parent == parent && 
-                        key.matches("::").count() == module_key.matches("::").count()
+                if let Some(target_module) = parent_module {
+                    // Check if this is a direct child of target_module
+                    // A direct child has the form: target_module::child_name (one more :: than target)
+                    let target_prefix = format!("{}::", target_module);
+                    if key.starts_with(&target_prefix) {
+                        // Count :: in both strings to ensure it's a direct child, not a grandchild
+                        let target_colons = target_module.matches("::").count();
+                        let key_colons = key.matches("::").count();
+                        key_colons == target_colons + 1
                     } else {
                         false
                     }
                 } else {
-                    // Top-level modules (no :: in the key, or just crate_name::module)
-                    key.matches("::").count() == module_key.matches("::").count() &&
-                    *key != _crate_name
+                    // Top-level modules of the crate (children of crate root)
+                    !key.contains("::") && *key != _crate_name
                 }
             })
             .collect();
         
-        sibling_modules.sort();
-        
-        if !sibling_modules.is_empty() {
-            let mut sibling_items = Vec::new();
+        for child_key in child_modules {
+            let child_name = child_key.split("::").last().unwrap_or(child_key);
+            let child_path = child_key.replace("::", "/");
+            let child_doc_id = if sidebar_prefix.is_empty() {
+                format!("{}/index", child_path)
+            } else {
+                format!("{}/{}/index", sidebar_prefix, child_path)
+            };
             
-            for sibling_key in sibling_modules {
-                let sibling_name = sibling_key.split("::").last().unwrap_or(sibling_key);
-                let sibling_path = sibling_key.replace("::", "/");
-                let sibling_doc_id = if sidebar_prefix.is_empty() {
-                    format!("{}/index", sibling_path)
-                } else {
-                    format!("{}/{}/index", sidebar_prefix, sibling_path)
-                };
-                
-                let label = sibling_name.to_string();
-                
-                sibling_items.push(SidebarItem::Doc {
-                    id: sibling_doc_id,
-                    label: Some(label),
-                    custom_props: Some("rust-mod".to_string()),
-                });
-            }
+            let label = child_name.to_string();
             
-            sidebar_items.push(SidebarItem::Category {
-                label: siblings_label,
-                items: sibling_items,
-                collapsed: false, // Keep open like rustdoc
-                link: None,
+            items_by_type.entry("Modules").or_insert_with(Vec::new).push(SidebarItem::Doc {
+                id: child_doc_id,
+                label: Some(label),
+                custom_props: Some("rust-mod".to_string()),
             });
         }
-    } else {
-        // For root crates: add "Crates" section with all sibling crates
+        
+        // Add all other items (structs, enums, functions, etc.) from parent_module
+            let parent_items_source = if let Some(parent_key) = parent_module {
+                modules.get(parent_key)
+            } else {
+                modules.get(_crate_name)
+            };
+        
+            if let Some(parent_module_items) = parent_items_source {
+            for (_item_id, item) in parent_module_items {
+                if let Some(item_name) = &item.name {
+                    // Skip modules (already added above)
+                    if matches!(&item.inner, ItemEnum::Module(_)) {
+                        continue;
+                    }
+                    
+                    let prefix = get_item_prefix(item);
+                    let parent_path = if let Some(pk) = parent_module {
+                        pk.replace("::", "/")
+                    } else {
+                        _crate_name.to_string()
+                    };
+                    
+                    let item_doc_id = if sidebar_prefix.is_empty() {
+                        format!("{}/{}{}", parent_path, prefix, item_name)
+                    } else {
+                        format!("{}/{}/{}{}", sidebar_prefix, parent_path, prefix, item_name)
+                    };
+                    
+                    // Determine CSS class and type category based on item type
+                    let (class_name, type_category) = if prefix.starts_with("struct.") {
+                        ("rust-struct", "Structs")
+                    } else if prefix.starts_with("enum.") {
+                        ("rust-struct", "Enums")
+                    } else if prefix.starts_with("trait.") {
+                        ("rust-trait", "Traits")
+                    } else if prefix.starts_with("fn.") {
+                        ("rust-fn", "Functions")
+                    } else if prefix.starts_with("constant.") {
+                        ("rust-constant", "Constants")
+                    } else if prefix.starts_with("type.") {
+                        ("rust-type", "Type Aliases")
+                    } else if prefix.starts_with("macro.") {
+                        ("rust-macro", "Macros")
+                    } else if prefix.starts_with("static.") {
+                        ("rust-static", "Statics")
+                    } else {
+                        ("rust-item", "Primitives")
+                    };
+                    
+                    items_by_type.entry(type_category).or_insert_with(Vec::new).push(SidebarItem::Doc {
+                        id: item_doc_id,
+                        label: Some(item_name.clone()),
+                        custom_props: Some(class_name.to_string()),
+                    });
+                }
+            }
+        } // Close if let Some(parent_module_items)
+        
+        // Create categories for each type that has items
+        let mut parent_section_items = Vec::new();
+        for type_name in type_order {
+            if let Some(items) = items_by_type.get(type_name) {
+                if !items.is_empty() {
+                    parent_section_items.push(SidebarItem::Category {
+                        label: type_name.to_string(),
+                        items: items.clone(),
+                        collapsed: false, // Will be rendered as collapsible: false
+                        link: None,
+                    });
+                }
+            }
+        }
+        
+        // Generate link to parent module
+        let parent_link = if let Some(parent_key) = parent_module {
+            let parent_path = parent_key.replace("::", "/");
+            if sidebar_prefix.is_empty() {
+                Some(format!("{}/index", parent_path))
+            } else {
+                Some(format!("{}/{}/index", sidebar_prefix, parent_path))
+            }
+        } else {
+            // Parent is crate root
+            if sidebar_prefix.is_empty() {
+                Some(format!("{}/index", _crate_name))
+            } else {
+                Some(format!("{}/{}/index", sidebar_prefix, _crate_name))
+            }
+        };
+        
+        // Add "In <parent>" section in these cases:
+        // - For leaf items (show_all_parent_items=true): always wrap in "In <module>"
+        // - For sub-modules where parent is NOT the crate: wrap in "In <parent>"
+        // - For modules where parent IS the crate: DON'T wrap (rustdoc behavior without TOC)
+        // Root crates (is_root=true) will show "Crates" section instead (added below)
+        let should_wrap_in_category = !is_root 
+            && !parent_section_items.is_empty() 
+            && (show_all_parent_items || parent_module != Some(_crate_name));
+        
+        if should_wrap_in_category {
+            sidebar_items.push(SidebarItem::Category {
+                label: siblings_label,
+                items: parent_section_items,
+                collapsed: false, // Keep open like rustdoc
+                link: parent_link,
+            });
+        } else if !is_root && !parent_section_items.is_empty() {
+            // For modules whose parent is the crate: add categories directly without wrapper
+            sidebar_items.extend(parent_section_items);
+        }
+    
+    // For root crates: add "Crates" section with workspace sibling crates
+    if is_root {
         let workspace_crates = WORKSPACE_CRATES.with(|wc| wc.borrow().clone());
         
         if workspace_crates.len() > 1 {
@@ -3545,7 +3835,6 @@ fn generate_sidebar_for_module(
                     format!("{}/{}/index", sidebar_prefix, normalized_crate_name)
                 };
                 
-                // Highlight current crate
                 let label = crate_name.to_string();
                 
                 crate_items.push(SidebarItem::Doc {
@@ -3561,13 +3850,13 @@ fn generate_sidebar_for_module(
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
-                    SidebarItem::Html { .. } => "", // HTML items don't have sortable labels
+                    SidebarItem::Html { .. } => "",
                 };
                 let label_b = match b {
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
-                    SidebarItem::Html { .. } => "", // HTML items don't have sortable labels
+                    SidebarItem::Html { .. } => "",
                 };
                 label_a.cmp(label_b)
             });
@@ -3575,7 +3864,7 @@ fn generate_sidebar_for_module(
             sidebar_items.push(SidebarItem::Category {
                 label: "Crates".to_string(),
                 items: crate_items,
-                collapsed: false, // Keep open like rustdoc
+                collapsed: false,
                 link: None,
             });
         }
@@ -3812,8 +4101,8 @@ fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: 
     
     for path in &sorted_paths {
         let items = &all_sidebars[path];
-        // Convert path with slashes to valid sidebar key (replace / with _)
-        let sidebar_key = path.replace("/", "_");
+        // Convert path with slashes and dots to valid sidebar key (replace / and . with _)
+        let sidebar_key = path.replace("/", "_").replace(".", "_");
         output.push_str(&format!("  '{}': [\n", sidebar_key));
         for item in items {
             output.push_str(&format_sidebar_item(item, 2));
@@ -3828,7 +4117,7 @@ fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: 
     
     // Also export the main sidebar for backward compatibility
     if let Some(first_path) = first_path {
-        let first_sidebar_key = first_path.replace("/", "_");
+        let first_sidebar_key = first_path.replace("/", "_").replace(".", "_");
         output.push_str("// Main API documentation sidebar (for backward compatibility)\n");
         output.push_str("export const rustApiDocumentation = rustSidebars['");
         output.push_str(&first_sidebar_key);
@@ -3942,7 +4231,14 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
                 output.push_str(&format!("{}  }},\n", indent_str));
             }
             
-            output.push_str(&format!("{}  collapsed: {},\n", indent_str, collapsed));
+            // Nested categories (indent > 0) are not collapsible (rustdoc style)
+            // Top-level categories use the collapsed parameter
+            if indent > 0 {
+                output.push_str(&format!("{}  collapsible: false,\n", indent_str));
+            } else {
+                output.push_str(&format!("{}  collapsed: {},\n", indent_str, collapsed));
+            }
+            
             output.push_str(&format!("{}  items: [\n", indent_str));
             
             for sub_item in items {

@@ -7,10 +7,22 @@ This directory contains the necessary files to integrate Rust documentation gene
 ```
 templates/
 ├── RustCode/
-│   ├── index.tsx              # React component for Rust code highlighting
-│   └── styles.module.css      # Component-scoped CSS (CSS Modules)
-├── rust-documentation.css     # Global Rust documentation styles
-├── custom.css                 # Docusaurus custom.css with customization guide
+│   ├── index.tsx.txt          # React component for Rust code highlighting
+│   └── styles.module.css.txt  # Component-scoped CSS (CSS Modules)
+├── RustCrateLink/
+│   ├── index.tsx.txt          # React component for crate titles
+│   ├── styles.module.css.txt  # Crate title styles
+│   └── README.md              # Component documentation
+├── RustModuleTitle/
+│   ├── index.tsx.txt          # React component for module titles
+│   ├── styles.module.css.txt  # Module title styles
+│   └── README.md              # Component documentation
+├── DocSidebarItemLink/
+│   ├── index.tsx.txt          # Swizzled Docusaurus component
+│   ├── styles.module.css.txt  # Sidebar link styles
+│   └── README.md              # Installation and usage guide
+├── rust-documentation.css.txt # Global Rust documentation styles
+├── custom.css.txt             # Docusaurus custom.css with customization guide
 └── README.md                  # This file
 ```
 
@@ -21,14 +33,41 @@ templates/
 1. **Copy RustCode component:**
    ```bash
    cp -r templates/RustCode/ /path/to/docusaurus/src/components/
+   cd /path/to/docusaurus/src/components/RustCode/
+   mv index.tsx.txt index.tsx
+   mv styles.module.css.txt styles.module.css
    ```
 
-2. **Copy Rust documentation CSS:**
+2. **Copy RustCrateLink component:**
    ```bash
-   cp templates/rust-documentation.css /path/to/docusaurus/src/css/
+   cp -r templates/RustCrateLink/ /path/to/docusaurus/src/components/
+   cd /path/to/docusaurus/src/components/RustCrateLink/
+   mv index.tsx.txt index.tsx
+   mv styles.module.css.txt styles.module.css
    ```
 
-3. **Add CSS to docusaurus.config.js:**
+3. **Copy RustModuleTitle component:**
+   ```bash
+   cp -r templates/RustModuleTitle/ /path/to/docusaurus/src/components/
+   cd /path/to/docusaurus/src/components/RustModuleTitle/
+   mv index.tsx.txt index.tsx
+   mv styles.module.css.txt styles.module.css
+   ```
+
+4. **Copy swizzled DocSidebarItemLink:**
+   ```bash
+   cp -r templates/DocSidebarItemLink/ /path/to/docusaurus/src/theme/DocSidebarItem/Link/
+   cd /path/to/docusaurus/src/theme/DocSidebarItem/Link/
+   mv index.tsx.txt index.tsx
+   mv styles.module.css.txt styles.module.css
+   ```
+
+5. **Copy Rust documentation CSS:**
+   ```bash
+   cp templates/rust-documentation.css.txt /path/to/docusaurus/src/css/rust-documentation.css
+   ```
+
+6. **Add CSS to docusaurus.config.js:**
    ```javascript
    module.exports = {
      // ... other config
@@ -40,8 +79,8 @@ templates/
    };
    ```
 
-4. **Update custom.css (optional):**
-   - Open `templates/custom.css` to see customization examples
+7. **Update custom.css (optional):**
+   - Open `templates/custom.css.txt` to see customization examples
    - Add variable overrides to your `src/css/custom.css` if needed
 
 ### Option 2: CLI (Coming Soon)
