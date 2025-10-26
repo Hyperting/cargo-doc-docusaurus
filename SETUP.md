@@ -54,87 +54,73 @@ npm start
 
 ## Component Installation
 
-Install all required React components and theme overrides.
+All required React components and stylesheets are embedded in `cargo-doc-docusaurus` and can be installed automatically.
 
-### 1. Create Directory Structure
+### Automatic Installation (Recommended)
+
+From your Docusaurus root directory:
 
 ```bash
 cd my-docs  # Your Docusaurus root
-
-# Create component directories
-mkdir -p src/components/RustCode
-mkdir -p src/components/RustCrateLink
-mkdir -p src/components/RustModuleTitle
-mkdir -p src/theme/DocSidebarItem/Link
-mkdir -p src/css
+cargo doc-docusaurus components init .
 ```
 
-### 2. Copy Components from Templates
+This will install:
+- **RustCode** component for syntax highlighting
+- **RustCrateLink** component for clickable crate links
+- **RustModuleTitle** component for module headers
+- **DocSidebarItem/Link** theme override for color-coded links
+- **rust-documentation.css** - Global Rust documentation styles
 
-From your `cargo-doc-docusaurus` repository:
+The command will:
+- Create all necessary directories (`src/components/`, `src/theme/`, `src/css/`)
+- Copy all component files from embedded templates
+- Skip files that already exist (no overwrites)
+- Show post-installation instructions
+
+### Get CSS Variables for Customization
+
+To get all available CSS variables for customizing colors:
 
 ```bash
-# Set paths
-TEMPLATES="/path/to/cargo-doc-md/templates"
-DOCUSAURUS="/path/to/my-docs"
+# Show all CSS variables with explanation
+cargo doc-docusaurus components css-vars
 
-# RustCode component
-cp "$TEMPLATES/RustCode/index.tsx.txt" "$DOCUSAURUS/src/components/RustCode/index.tsx"
-cp "$TEMPLATES/RustCode/styles.module.css.txt" "$DOCUSAURUS/src/components/RustCode/styles.module.css"
-
-# RustCrateLink component
-cp "$TEMPLATES/RustCrateLink/index.tsx.txt" "$DOCUSAURUS/src/components/RustCrateLink/index.tsx"
-cp "$TEMPLATES/RustCrateLink/styles.module.css.txt" "$DOCUSAURUS/src/components/RustCrateLink/styles.module.css"
-
-# RustModuleTitle component
-cp "$TEMPLATES/RustModuleTitle/index.tsx.txt" "$DOCUSAURUS/src/components/RustModuleTitle/index.tsx"
-cp "$TEMPLATES/RustModuleTitle/styles.module.css.txt" "$DOCUSAURUS/src/components/RustModuleTitle/styles.module.css"
-
-# DocSidebarItem/Link (swizzled theme component)
-cp "$TEMPLATES/DocSidebarItem/Link/index.tsx.txt" "$DOCUSAURUS/src/theme/DocSidebarItem/Link/index.tsx"
-cp "$TEMPLATES/DocSidebarItem/Link/styles.module.css.txt" "$DOCUSAURUS/src/theme/DocSidebarItem/Link/styles.module.css"
-
-# CSS files
-cp "$TEMPLATES/rust-documentation.css.txt" "$DOCUSAURUS/src/css/rust-documentation.css"
+# Output only CSS (for appending to file)
+cargo doc-docusaurus components css-vars --css-only >> src/css/custom.css
 ```
 
-### 3. Verify Structure
+### Verify Installation
+
+List installed components:
 
 ```bash
-tree src/
+cargo doc-docusaurus components list .
 ```
 
-Expected output:
+You should see all 9 components marked as "✅ Installed".
 
+### Update Components
+
+To update components to the latest version:
+
+```bash
+cargo doc-docusaurus components sync .
 ```
-src/
-├── components/
-│   ├── RustCode/
-│   │   ├── index.tsx
-│   │   └── styles.module.css
-│   ├── RustCrateLink/
-│   │   ├── index.tsx
-│   │   └── styles.module.css
-│   └── RustModuleTitle/
-│       ├── index.tsx
-│       └── styles.module.css
-├── theme/
-│   └── DocSidebarItem/
-│       └── Link/
-│           ├── index.tsx
-│           └── styles.module.css
-└── css/
-    ├── custom.css
-    └── rust-documentation.css
-```
+
+This will:
+- Update only existing component files
+- Skip files that don't exist (use `init` for fresh installation)
+- Show which files were updated
+
+### Manual Installation (Advanced)
+
 
 ## CSS Configuration
 
+All Rust-specific styles are automatically installed with `cargo doc-docusaurus components init`. You just need to load them in your Docusaurus config.
+
 ### Load Rust Documentation CSS
-
-All Rust-specific styles are included in `rust-documentation.css`. You just need to load it in your Docusaurus config.
-
-**Option A: Via docusaurus.config.js (Recommended)**
 
 Edit `docusaurus.config.js` (or `.ts`):
 
@@ -152,35 +138,33 @@ module.exports = {
 };
 ```
 
-Then copy the file to your static directory:
-
-```bash
-cp "$TEMPLATES/rust-documentation.css.txt" "$DOCUSAURUS/static/css/rust-documentation.css"
 ```
 
-**Option B: Via custom.css import**
+## CSS Configuration
 
-Alternatively, import in `src/css/custom.css`:
+All Rust-specific styles are automatically installed with `cargo doc-docusaurus components init`. You just need to load them in your Docusaurus config.
 
-```css
-@import "./rust-documentation.css";
+### Load Rust Documentation CSS
 
-/* Your custom Docusaurus styles below */
-:root {
-  --ifm-color-primary: #2e8555;
-  /* ... other Docusaurus variables ... */
-}
-```
+Edit `docusaurus.config.js` (or `.ts`):
 
-Then copy to src:
+```javascript
+module.exports = {
+  // ... other config
 
-```bash
-cp "$TEMPLATES/rust-documentation.css.txt" "$DOCUSAURUS/src/css/rust-documentation.css"
+  stylesheets: [
+    {
+      href: '/css/rust-documentation.css',
+    },
+  ],
+
+  // ... rest of config
+};
 ```
 
 ### Optional: Customize Colors
 
-All colors are defined using CSS variables. To customize, add to your `custom.css`:
+All colors are defined using CSS variables. To customize, add to your `src/css/custom.css`:
 
 ```css
 :root {

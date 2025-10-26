@@ -24,3 +24,4 @@ rustdoc-types = { version = "0.56", features = ["rustc-hash"] }
 
 [dev-dependencies]
 insta = { version = "1.41", features = ["glob"] }
+tempfile = "3.13"
