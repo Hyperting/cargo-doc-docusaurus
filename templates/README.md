@@ -17,12 +17,14 @@ templates/
 │   ├── index.tsx.txt          # React component for module titles
 │   ├── styles.module.css.txt  # Module title styles
 │   └── README.md              # Component documentation
-├── DocSidebarItemLink/
-│   ├── index.tsx.txt          # Swizzled Docusaurus component
-│   ├── styles.module.css.txt  # Sidebar link styles
-│   └── README.md              # Installation and usage guide
+├── DocSidebarItem/
+│   └── Link/
+│       ├── index.tsx.txt          # Swizzled Docusaurus component
+│       ├── styles.module.css.txt  # Sidebar link styles
+│       └── README.md              # Installation and usage guide
 ├── rust-documentation.css.txt # Global Rust documentation styles
 ├── custom.css.txt             # Docusaurus custom.css with customization guide
+├── CSS_GUIDE.md               # Complete CSS architecture and troubleshooting guide
 └── README.md                  # This file
 ```
 
@@ -54,9 +56,10 @@ templates/
    mv styles.module.css.txt styles.module.css
    ```
 
-4. **Copy swizzled DocSidebarItemLink:**
+4. **Copy swizzled DocSidebarItem/Link:**
    ```bash
-   cp -r templates/DocSidebarItemLink/ /path/to/docusaurus/src/theme/DocSidebarItem/Link/
+   mkdir -p /path/to/docusaurus/src/theme/DocSidebarItem/Link
+   cp -r templates/DocSidebarItem/Link/ /path/to/docusaurus/src/theme/DocSidebarItem/
    cd /path/to/docusaurus/src/theme/DocSidebarItem/Link/
    mv index.tsx.txt index.tsx
    mv styles.module.css.txt styles.module.css
@@ -92,6 +95,8 @@ cargo-doc-docusaurus components sync /path/to/docusaurus
 ## Customization
 
 The Rust documentation styles use **CSS Custom Properties (variables)** for easy customization. All colors, spacing, and layout can be overridden in your `custom.css` without modifying the source files.
+
+**For a complete guide on CSS architecture, troubleshooting, and customization, see [CSS_GUIDE.md](./CSS_GUIDE.md).**
 
 ### Available CSS Variables
 
@@ -205,49 +210,3 @@ import RustCode from '@site/src/components/RustCode';
 - ✅ No conflicts with user's `custom.css`
 - ✅ Theme-aware (respects dark/light mode)
 - ✅ Customizable without editing source
-
-## Color Scheme
-
-The default color scheme is inspired by rustdoc:
-
-| Item Type | Light Mode | Dark Mode |
-|-----------|------------|-----------|
-| Modules | Gold | Light Gold |
-| Structs/Enums | Cyan | Light Cyan |
-| Traits | Purple | Light Purple |
-| Functions | Blue | Light Blue |
-
-All colors can be customized via CSS variables!
-
-## Development Workflow
-
-1. Edit converter or templates
-2. Run `./regenerate-example.sh` (from cargo-doc-md root)
-3. View changes in example-docs with `npm start`
-
-## Syncing to External Project
-
-Until the CLI is ready, manually copy:
-
-```bash
-# From cargo-doc-md root
-cp -r templates/RustCode/ ../your-project/docs/src/components/
-cp templates/rust-documentation.css ../your-project/docs/src/css/
-
-# Then add to docusaurus.config.js:
-# stylesheets: [{href: '/css/rust-documentation.css'}]
-```
-
-## Future: CLI Commands
-
-Coming soon:
-```bash
-# Sync all components
-cargo-doc-docusaurus components sync <docusaurus-path>
-
-# Show component info
-cargo-doc-docusaurus components show
-
-# Initialize new project
-cargo-doc-docusaurus components init <docusaurus-path>
-```

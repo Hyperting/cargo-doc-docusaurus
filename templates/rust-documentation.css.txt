@@ -231,3 +231,61 @@ div:has(> a.rust-type) {
 .menu__link.rust-type:hover {
   color: var(--rust-color-function-hover) !important;
 }
+
+/* ===========================================================================
+   ADDITIONAL RUST HELPERS (moved from custom.css)
+   These are safe, non-opinionated helpers that make integration easier.
+   They use the css variables above so sites can override colors in one place
+   (e.g. via `custom.css` or by editing the variables in this file).
+   =========================================================================== */
+
+/* Rust type links - clickable type names in code */
+.rust-type-link {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: text-decoration-thickness 0.2s, opacity 0.2s;
+}
+
+.rust-type-link:hover {
+  text-decoration-thickness: 2px;
+  opacity: 0.8;
+}
+
+/* Blocks of code that contain clickable links */
+.rust-code-with-links pre {
+  background-color: var(--ifm-code-background);
+  border-radius: var(--ifm-code-border-radius);
+  padding: var(--ifm-pre-padding);
+  overflow-x: auto;
+}
+
+/* Inline code used for method signatures and similar */
+.rust-inline-code {
+  font-family: var(--ifm-font-family-monospace, monospace);
+  display: block;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  font-size: 0.9375em;
+  line-height: 1.5;
+  white-space: pre;
+  margin-bottom: 0.5em;
+}
+
+.rust-inline-code div { display: block; }
+.rust-inline-code + p { margin-top: 0.75em; }
+
+/* Optional section classes used by templates */
+.rust-item-section + p { margin-top: 0.5em; }
+.rust-item-section + p + p { margin-top: 0.5em; }
+
+/* Group/name colors (alternative way to color groups instead of links) */
+.rust-modules { color: var(--rust-color-module); }
+.rust-structs-enums { color: var(--rust-color-struct); }
+.rust-traits { color: var(--rust-color-trait); }
+.rust-functions { color: var(--rust-color-function); }
+.rust-constants { color: var(--rust-color-function); }
+.rust-type-aliases { color: var(--rust-color-function); }
+

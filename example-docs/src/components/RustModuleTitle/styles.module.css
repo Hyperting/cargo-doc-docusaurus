@@ -1,0 +1,31 @@
+.rustModuleLink {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0.75rem 0.75rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.75rem !important;
+  border-bottom: 1px solid var(--ifm-color-emphasis-200) !important;
+  text-decoration: none !important;
+  transition: background-color 0.2s ease !important;
+  border-radius: var(--ifm-global-radius) !important;
+}
+
+.rustModuleLink:hover {
+  background-color: var(--ifm-menu-color-background-hover) !important;
+  text-decoration: none !important;
+}
+
+.moduleName {
+  font-weight: 600;
+  font-size: 1.05em;
+  line-height: 1.4;
+  color: var(--ifm-font-color-base);
+}
+
+[data-theme='dark'] .moduleName {
+  color: var(--ifm-font-color-base);
+}
+
+[data-theme='light'] .moduleName {
+  color: var(--ifm-font-color-base);
+}

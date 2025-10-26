@@ -115,11 +115,15 @@ Requires Rust nightly.
 
 ## Docusaurus Integration
 
-This tool is designed to work seamlessly with Docusaurus. The generated markdown files use a custom `RustCode` React component for syntax highlighting and clickable type links.
+This tool is designed to work seamlessly with Docusaurus. The generated markdown files use custom React components for syntax highlighting and clickable type links.
+
+### Quick Start
+
+For a complete step-by-step setup guide, see **[SETUP.md](SETUP.md)**.
 
 ### Template Files and Setup
 
-Template files for Docusaurus integration (React component, CSS styles, and documentation) are provided in the `templates/` directory. For detailed installation instructions and customization options, see [templates/README.md](templates/README.md).
+Template files for Docusaurus integration (React components, CSS styles, and documentation) are provided in the `templates/` directory. For detailed installation instructions and customization options, see [templates/README.md](templates/README.md).
 
 ### Basic Setup
 

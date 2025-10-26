@@ -2,6 +2,11 @@
 source: tests/snapshot_tests.rs
 expression: lib_content
 ---
+---
+title: test_crate
+displayed_sidebar: '_test_crate'
+---
+
 import RustCode from '@site/src/components/RustCode';
 import Link from '@docusaurus/Link';
 

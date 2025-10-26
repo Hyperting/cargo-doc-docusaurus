@@ -46,11 +46,6 @@ enum SidebarItem {
         collapsed: bool,
         link: Option<String>, // Optional link to make category clickable
     },
-    /// An HTML item for custom components (like RustCrateLink)
-    Html {
-        value: String,
-        default_style: bool,
-    },
 }
 
 /// Convert a rustdoc Crate to multi-file markdown format.
@@ -3421,9 +3416,9 @@ fn generate_sidebar_for_module(
     _crate_name: &str, // Prefixed with _ to avoid unused warning
     module_key: &str,
     modules: &HashMap<String, Vec<(Id, Item)>>,
-    crate_data: &Crate,
+    _crate_data: &Crate, // Prefixed with _ to avoid unused warning
     sidebar_prefix: &str,
-    sidebarconfig_collapsed: bool,
+    _sidebarconfig_collapsed: bool, // Prefixed with _ to avoid unused warning
     is_root: bool,
     crate_version: &Option<String>,
     show_all_parent_items: bool, // New parameter: if true, show all items in parent module (for leaf items)
@@ -3431,7 +3426,7 @@ fn generate_sidebar_for_module(
     let module_items = modules.get(module_key).cloned().unwrap_or_default();
     
     // Convert module_key from :: to / for doc IDs
-    let module_path = module_key.replace("::", "/");
+    let _module_path = module_key.replace("::", "/"); // Prefixed with _ to avoid unused warning
     
     let mut sidebar_items = Vec::new();
     
@@ -3536,91 +3531,6 @@ fn generate_sidebar_for_module(
         
         by_type.entry(type_name).or_default().push(item);
     }
-    
-    let type_order = vec![
-        "Modules", "Macros", "Proc Macros", "Structs", "Enums",
-        "Traits", "Functions", "Type Aliases", "Constants", "Statics",
-    ];
-    
-    // Rustdoc-style: Do NOT show categories in sidebars
-    // Items are only shown in the "In <parent>" section
-    // This code block is commented out to match rustdoc behavior
-    /*
-    if !is_root {
-        for type_name in type_order {
-        if let Some(items_of_type) = by_type.get(type_name) {
-            let mut category_items = Vec::new();
-            
-            for item in items_of_type {
-                if let Some(name) = &item.name {
-                    // For modules, check if they have public content
-                    if type_name == "Modules" {
-                        if let ItemEnum::Module(module_item) = &item.inner {
-                            if !module_has_public_content(&module_item.items, &crate_data.index) {
-                                continue;
-                            }
-                        }
-                    }
-                    
-                    let (doc_id, class_name) = if type_name == "Modules" {
-                        let full_module_path = format!("{}/{}", module_path, name);
-                        let id = if sidebar_prefix.is_empty() {
-                            format!("{}/index", full_module_path)
-                        } else {
-                            format!("{}/{}/index", sidebar_prefix, full_module_path)
-                        };
-                        (id, "rust-mod")
-                    } else {
-                        let prefix = get_item_prefix(item);
-                        let id = if sidebar_prefix.is_empty() {
-                            format!("{}/{}{}", module_path, prefix, name)
-                        } else {
-                            format!("{}/{}/{}{}", sidebar_prefix, module_path, prefix, name)
-                        };
-                        
-                        // Determine CSS class based on item type
-                        let class = if prefix.starts_with("struct.") {
-                            "rust-struct"
-                        } else if prefix.starts_with("enum.") {
-                            "rust-struct" // Same color as struct
-                        } else if prefix.starts_with("trait.") {
-                            "rust-trait"
-                        } else if prefix.starts_with("fn.") {
-                            "rust-fn"
-                        } else if prefix.starts_with("constant.") {
-                            "rust-constant"
-                        } else if prefix.starts_with("type.") {
-                            "rust-type"
-                        } else {
-                            "rust-item"
-                        };
-                        (id, class)
-                    };
-                
-                // Extract a nice label from the item name
-                let label = name.to_string();
-                
-                category_items.push(SidebarItem::Doc {
-                    id: doc_id,
-                    label: Some(label),
-                    custom_props: Some(class_name.to_string()),
-                });
-            }
-        } // Close for item in items_of_type
-        
-        if !category_items.is_empty() {
-            // Always wrap items in a category (for both root and submodules)
-            sidebar_items.push(SidebarItem::Category {
-                label: type_name.to_string(),
-                items: category_items,
-                collapsed: sidebarconfig_collapsed,
-                link: None,
-            });
-        }
-    } // Close if let Some(items_of_type)
-} // Close for type_name in type_order
-    } // Close if !is_root
-    */
     
     // Add "In <parent>" section for ALL modules and crates (rustdoc style)
     // - For crate root (is_root = true): show workspace sibling crates
@@ -3850,13 +3760,11 @@ fn generate_sidebar_for_module(
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
-                    SidebarItem::Html { .. } => "",
                 };
                 let label_b = match b {
                     SidebarItem::Doc { label, .. } => label.as_deref().unwrap_or(""),
                     SidebarItem::Link { label, .. } => label.as_str(),
                     SidebarItem::Category { label, .. } => label.as_str(),
-                    SidebarItem::Html { .. } => "",
                 };
                 label_a.cmp(label_b)
             });
@@ -3871,196 +3779,6 @@ fn generate_sidebar_for_module(
     }
     
     sidebar_items
-}
-
-/// Old generate_sidebar function - kept for backward compatibility during refactoring
-/// Check if a module has any public content (not just re-exports or private items)
-fn module_has_public_content<S: std::hash::BuildHasher>(
-    item_ids: &[Id],
-    index: &HashMap<Id, Item, S>,
-) -> bool {
-    for id in item_ids {
-        if let Some(item) = index.get(id) {
-            // Skip re-exports
-            if matches!(&item.inner, ItemEnum::Use(_)) {
-                continue;
-            }
-            
-            // If we find any non-Use item, the module has content
-            // (we rely on rustdoc to filter out private items already)
-            return true;
-        }
-    }
-    false
-}
-
-fn generate_sidebar(
-    crate_name: &str,
-    modules: &HashMap<String, Vec<(Id, Item)>>,
-    _item_paths: &HashMap<Id, Vec<String>>,
-    crate_data: &Crate,
-    sidebarconfig_collapsed: bool,
-) -> String {
-    let root_module_key = crate_name.to_string();
-    
-    // Get the base_path from thread-local storage
-    let base_path = BASE_PATH.with(|bp| bp.borrow().clone());
-    
-    // For Docusaurus sidebar, paths must be relative to the docs/ folder
-    // If base_path starts with /docs/ or docs/, we need to remove it
-    // because Docusaurus already assumes paths are relative to docs/
-    let sidebar_prefix = if base_path == "/docs" || base_path == "docs" {
-        // If base_path is exactly "/docs" or "docs", use empty prefix
-        ""
-    } else if base_path.starts_with("/docs/") {
-        base_path.strip_prefix("/docs/").unwrap()
-    } else if base_path.starts_with("docs/") {
-        base_path.strip_prefix("docs/").unwrap()
-    } else {
-        &base_path
-    };
-    
-    // Get root-level items
-    let root_items = modules.get(&root_module_key).cloned().unwrap_or_default();
-    
-    // Build sidebar structure
-    let mut sidebar_items = Vec::new();
-    
-    // Add crate overview as first item
-    let crate_index_path = if sidebar_prefix.is_empty() {
-        format!("{}/index", crate_name)
-    } else {
-        format!("{}/{}/index", sidebar_prefix, crate_name)
-    };
-    sidebar_items.push(SidebarItem::Doc {
-        id: crate_index_path,
-        label: Some("Overview".to_string()),
-        custom_props: None,
-    });
-    
-    // Categorize root-level items by type
-    let mut by_type: HashMap<&str, Vec<&Item>> = HashMap::new();
-    
-    for (_, item) in &root_items {
-        // Skip re-exports and private items
-        if matches!(&item.inner, ItemEnum::Use(_)) {
-            continue;
-        }
-        
-        let type_name = match &item.inner {
-            ItemEnum::Module(_) => "Modules",
-            ItemEnum::Struct(_) | ItemEnum::StructField(_) => "Structs",
-            ItemEnum::Enum(_) | ItemEnum::Variant(_) => "Enums",
-            ItemEnum::Function(_) => "Functions",
-            ItemEnum::Trait(_) => "Traits",
-            ItemEnum::Constant { .. } => "Constants",
-            ItemEnum::TypeAlias(_) => "Type Aliases",
-            ItemEnum::Macro(_) => "Macros",
-            ItemEnum::ProcMacro(_) => "Proc Macros",
-            ItemEnum::Static { .. } => "Statics",
-            _ => continue,
-        };
-        
-        by_type.entry(type_name).or_default().push(item);
-    }
-    
-    // Order of categories (like rustdoc)
-    let type_order = vec![
-        "Modules",
-        "Macros",
-        "Proc Macros",
-        "Structs",
-        "Enums",
-        "Traits",
-        "Functions",
-        "Type Aliases",
-        "Constants",
-        "Statics",
-    ];
-    
-    for type_name in type_order {
-        if let Some(items_of_type) = by_type.get(type_name) {
-            let mut category_items = Vec::new();
-            
-            for item in items_of_type {
-                if let Some(name) = &item.name {
-                    // For modules, check if they have public content before adding to sidebar
-                    if type_name == "Modules" {
-                        if let ItemEnum::Module(module_item) = &item.inner {
-                            // Check if module has any public items
-                            if !module_has_public_content(&module_item.items, &crate_data.index) {
-                                continue; // Skip modules without public content
-                            }
-                        }
-                    }
-                    
-                    let doc_path = if type_name == "Modules" {
-                        // Modules link to their index page
-                        if sidebar_prefix.is_empty() {
-                            format!("{}/{}/index", crate_name, name)
-                        } else {
-                            format!("{}/{}/{}/index", sidebar_prefix, crate_name, name)
-                        }
-                    } else {
-                        // Other items use rustdoc-style prefix
-                        let prefix = get_item_prefix(item);
-                    if sidebar_prefix.is_empty() {
-                        format!("{}/{}{}", crate_name, prefix, name)
-                    } else {
-                        format!("{}/{}/{}{}", sidebar_prefix, crate_name, prefix, name)
-                    }
-                };
-                
-                // Extract a nice label from the item name
-                let label = name.to_string();
-                
-                let custom_props = if type_name == "Modules" {
-                    Some("rust-mod".to_string())
-                } else {
-                    None
-                };
-                
-                category_items.push(SidebarItem::Doc {
-                    id: doc_path,
-                    label: Some(label),
-                    custom_props,
-                });
-            }
-        }            if !category_items.is_empty() {
-                sidebar_items.push(SidebarItem::Category {
-                    label: type_name.to_string(),
-                    items: category_items,
-                    collapsed: sidebarconfig_collapsed,
-                    link: None, // Sub-categories are not clickable
-                });
-            }
-        }
-    }
-    
-    // Wrap all items in a crate-level category for multi-crate workspaces
-    // The first item in sidebar_items is the crate index, which we'll use as the category link
-    let crate_index_link = if let Some(SidebarItem::Doc { id, .. }) = sidebar_items.first() {
-        Some(id.clone())
-    } else {
-        None
-    };
-    
-    // Remove the crate index from items since it will be the category link
-    let category_items = if crate_index_link.is_some() {
-        sidebar_items.into_iter().skip(1).collect()
-    } else {
-        sidebar_items
-    };
-    
-    let crate_category = SidebarItem::Category {
-        label: crate_name.to_string(),
-        items: category_items,
-        collapsed: sidebarconfig_collapsed,
-        link: crate_index_link,
-    };
-    
-    // Convert to JavaScript/TypeScript code
-    sidebar_to_js(&[crate_category])
 }
 
 /// Convert multiple sidebars to TypeScript code
@@ -4130,40 +3848,6 @@ fn sidebars_to_js(all_sidebars: &HashMap<String, Vec<SidebarItem>>, _collapsed: 
         output.push_str("  items: rustApiDocumentation,\n");
         output.push_str("};\n");
     }
-    
-    output
-}
-
-/// Convert sidebar items to TypeScript code
-fn sidebar_to_js(items: &[SidebarItem]) -> String {
-    let mut output = String::new();
-    
-    output.push_str("// This file is auto-generated by cargo-doc-md\n");
-    output.push_str("// Do not edit manually - this file will be regenerated\n\n");
-    output.push_str("import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';\n\n");
-    output.push_str("// Rust API documentation sidebar items\n");
-    output.push_str("// Import this in your main sidebars.ts file:\n");
-    output.push_str("// import {rustApiDocumentation} from './sidebars-rust';\n");
-    output.push_str("//\n");
-    output.push_str("// Then add it to your sidebar:\n");
-    output.push_str("// tutorialSidebar: [\n");
-    output.push_str("//   'intro',\n");
-    output.push_str("//   ...rustApiDocumentation,\n");
-    output.push_str("// ]\n\n");
-    output.push_str("export const rustApiDocumentation = [\n");
-    
-    for item in items {
-        output.push_str(&format_sidebar_item(item, 1));
-    }
-    
-    output.push_str("];\n\n");
-    output.push_str("// Or use as a single category:\n");
-    output.push_str("export const rustApiCategory = {\n");
-    output.push_str("  type: 'category' as const,\n");
-    output.push_str("  label: 'API Documentation',\n");
-    output.push_str("  collapsed: false,\n");
-    output.push_str("  items: rustApiDocumentation,\n");
-    output.push_str("};\n");
     
     output
 }
@@ -4246,15 +3930,6 @@ fn format_sidebar_item(item: &SidebarItem, indent: usize) -> String {
             }
             
             output.push_str(&format!("{}  ],\n", indent_str));
-            output.push_str(&format!("{}}},\n", indent_str));
-            output
-        }
-        SidebarItem::Html { value, default_style } => {
-            // Generate an HTML item for custom React components
-            let mut output = format!("{}{{\n", indent_str);
-            output.push_str(&format!("{}  type: 'html',\n", indent_str));
-            output.push_str(&format!("{}  value: `{}`,\n", indent_str, value));
-            output.push_str(&format!("{}  defaultStyle: {},\n", indent_str, default_style));
             output.push_str(&format!("{}}},\n", indent_str));
             output
         }

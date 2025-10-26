@@ -76,6 +76,7 @@ export default function DocSidebarItemLink({
         className={clsx(
           'menu__link',
           !isInternalLink && styles.menuExternalLink,
+          className, // Add the className from sidebar item (e.g., 'rust-mod', 'rust-struct')
           {
             'menu__link--active': isActive,
           },

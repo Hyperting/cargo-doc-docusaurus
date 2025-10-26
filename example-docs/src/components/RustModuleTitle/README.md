@@ -37,13 +37,7 @@ The component uses CSS modules from `styles.module.css`:
 
 ## Installation
 
-Copy the entire `RustModuleTitle` directory to your Docusaurus project:
-
-```bash
-cp -r templates/RustModuleTitle src/components/
-```
-
-See the main [DocSidebarItem/Link README](../DocSidebarItem/Link/README.md) for information on the swizzled component that uses this.
+See the main [DocSidebarItemLink README](../DocSidebarItemLink/README.md) for installation instructions.
 
 ## Customization
 

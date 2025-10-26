@@ -1,7 +1,7 @@
-//! Convert rustdoc JSON output to clean, LLM-friendly markdown documentation.
+//! Convert rustdoc JSON output to Docusaurus-compatible markdown documentation.
 //!
 //! This library provides functionality to parse rustdoc's JSON output and convert it
-//! to well-formatted markdown files suitable for LLM consumption and text-based viewing.
+//! to well-formatted markdown files with React component integration for Docusaurus sites.
 //!
 //! # Example
 //!

@@ -157,7 +157,6 @@ fn merge_rust_sidebars(existing: &str, new_content: &str) -> Result<String> {
         let mut current_key = String::new();
         let mut current_value = String::new();
         let mut brace_depth = 0;
-        let mut in_key = false;
         let mut in_value = false;
         
         for line in content.lines() {

@@ -1,3 +1,4 @@
+@import "./rust-documentation.css";
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -29,49 +30,15 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
-/* ===========================================================================
-   RUST DOCUMENTATION CUSTOMIZATION
-   =========================================================================== */
-
-/**
- * The Rust documentation styles are loaded from rust-documentation.css
- * and use CSS variables for easy customization.
- * 
- * To customize the colors, uncomment and modify the variables below.
- * 
- * Available variables:
- * 
- * Item Colors (Light Mode):
- *   --rust-color-module: rgb(173, 124, 0)           - Modules (gold)
- *   --rust-color-module-hover: rgb(200, 140, 0)
- *   --rust-color-struct: rgb(0, 125, 119)           - Structs/Enums (cyan)
- *   --rust-color-struct-hover: rgb(0, 150, 140)
- *   --rust-color-trait: rgb(110, 79, 201)           - Traits (purple)
- *   --rust-color-trait-hover: rgb(130, 100, 220)
- *   --rust-color-function: rgb(0, 92, 197)          - Functions (blue)
- *   --rust-color-function-hover: rgb(0, 110, 220)
- * 
- * Item Colors (Dark Mode):
- *   --rust-color-module: rgb(255, 180, 84)          - Light gold
- *   --rust-color-module-hover: rgb(255, 200, 120)
- *   --rust-color-struct: rgb(45, 191, 184)          - Light cyan
- *   --rust-color-struct-hover: rgb(80, 220, 210)
- *   --rust-color-trait: rgb(178, 162, 253)          - Light purple
- *   --rust-color-trait-hover: rgb(200, 180, 255)
- *   --rust-color-function: rgb(141, 219, 255)       - Light blue
- *   --rust-color-function-hover: rgb(170, 230, 255)
- * 
- * Spacing:
- *   --rust-item-spacing: 0.35em                     - Space between item links
- *   --rust-field-indent: 1.5em                      - Indentation for field docs
- * 
- * Example 1: Orange modules
- * :root {
- *   --rust-color-module: rgb(255, 120, 0);
- * }
- * 
- * Example 2: Match your brand colors
- * :root {
- *   --rust-color-struct: var(--ifm-color-primary);
- * }
- */
+/* ============================================================================
+   CUSTOM STYLES
+   Add your custom CSS here. All Rust-specific styles are now included in
+   rust-documentation.css (imported above).
+   
+   You can override CSS variables to customize colors:
+   
+   :root {
+     --rust-color-module: rgb(255, 120, 0);
+     --rust-color-struct: rgb(0, 150, 200);
+   }
+   ============================================================================ */
