@@ -16,6 +16,14 @@ homepage = "https://github.com/Hyperting/cargo-doc-docusaurus"
 keywords = ["cargo-subcommand", "docusaurus", "documentation", "rustdoc", "cargo"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.85"
+include = [
+  "Cargo.toml",
+  "README.md",
+  "CHANGELOG.md",
+  "LICENSE-*",
+  "src/**",
+  "templates/**",
+]
 
 [[bin]]
 name = "cargo-doc-docusaurus"
