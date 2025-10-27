@@ -1,7 +1,5 @@
 tag-name = "v{{version}}"
 push = true
 publish = false
-dev-version = true
 consolidate-commits = true
 pre-release-commit-message = "chore: prepare release {{version}}"
-post-release-commit-message = "chore: start next development iteration {{next_version}}"
