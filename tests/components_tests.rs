@@ -83,7 +83,7 @@ fn test_components_init_creates_all_files() {
 
   // Run components init command
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       "components",
@@ -157,7 +157,7 @@ fn test_components_init_skips_existing_files() {
 
   // Run components init command
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       "components",
@@ -210,7 +210,7 @@ fn test_components_sync_updates_existing_only() {
 
   // Run components sync command
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       "components",
@@ -243,7 +243,7 @@ fn test_components_sync_updates_existing_only() {
 fn test_components_list_without_path() {
   // Run components list without path - should show all templates
   let output = std::process::Command::new("cargo")
-    .args(&["run", "--", "components", "list"])
+    .args(["run", "--", "components", "list"])
     .output()
     .expect("Failed to run cargo run");
 
@@ -306,7 +306,7 @@ fn test_components_list_with_path_shows_status() {
 
   // Run components list with path
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       "components",
@@ -352,7 +352,7 @@ fn test_cli_backward_compatibility_json_conversion() {
 
   // Run conversion without subcommand (old style)
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       json_path.to_str().unwrap(),
@@ -388,7 +388,7 @@ fn test_cli_backward_compatibility_json_conversion() {
 fn test_components_init_invalid_path() {
   // Test with non-existent path
   let output = std::process::Command::new("cargo")
-    .args(&["run", "--", "components", "init", "/nonexistent/path"])
+    .args(["run", "--", "components", "init", "/nonexistent/path"])
     .output()
     .expect("Failed to run cargo run");
 
@@ -411,7 +411,7 @@ fn test_components_init_non_docusaurus_project() {
 
   // Empty directory (not a Docusaurus project)
   let output = std::process::Command::new("cargo")
-    .args(&[
+    .args([
       "run",
       "--",
       "components",
