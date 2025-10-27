@@ -1,8 +1,13 @@
 [package]
 name = "cargo-doc-docusaurus"
-version = "0.7.5"
+version = "0.1.0"
 edition = "2024"
-authors = ["Claude (Anthropic AI) <noreply@anthropic.com>"]
+authors = [
+  "Claude (Anthropic AI) <noreply@anthropic.com>",
+  "Qwen (Alibaba Cloud) <noreply@qwen.ai>",
+  "Grok (xAI) <noreply@xai.com>",
+  ""
+]
 license = "MIT OR Apache-2.0"
 description = "Cargo subcommand to generate Docusaurus-compatible documentation for Rust crates and dependencies"
 readme = "README.md"
@@ -18,7 +23,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.100"
-clap = { version = "4.5.48", features = ["derive"] }
+clap = { version = "4.5.50", features = ["derive"] }
 serde_json = "1.0.145"
 rustdoc-types = { version = "0.56", features = ["rustc-hash"] }
 
