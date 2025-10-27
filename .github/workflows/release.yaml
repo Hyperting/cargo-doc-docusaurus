@@ -12,7 +12,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-dist
-        run: cargo install cargo-dist || true
+        run: cargo install cargo-dist --version ^0.30 --locked || true
       - name: Build archives
         run: cargo dist build
       - name: Generate manifest/checksums
