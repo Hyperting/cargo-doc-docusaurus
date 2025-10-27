@@ -7,11 +7,11 @@ use std::collections::HashMap;
 
 thread_local! {
     /// Thread-local storage for the base path to use in generated links
-    static BASE_PATH: RefCell<String> = RefCell::new(String::new());
+    static BASE_PATH: RefCell<String> = const { RefCell::new(String::new()) };
     /// Thread-local storage for workspace crate names
-    static WORKSPACE_CRATES: RefCell<Vec<String>> = RefCell::new(Vec::new());
+    static WORKSPACE_CRATES: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     /// Thread-local storage for the sidebar root link URL
-    static SIDEBAR_ROOT_LINK: RefCell<Option<String>> = RefCell::new(None);
+    static SIDEBAR_ROOT_LINK: RefCell<Option<String>> = const { RefCell::new(None) };
 }
 
 /// Represents the multi-file markdown output
@@ -376,7 +376,6 @@ fn build_reexported_modules(
 }
 
 /// Check if all items in a module are re-exported in its parent module
-
 fn group_by_module(
   crate_data: &Crate,
   item_paths: &HashMap<Id, Vec<String>>,
@@ -670,7 +669,7 @@ fn resolve_reexport_chain<'a>(
     return None;
   }
 
-  if !visited.insert(item_id.clone()) {
+  if !visited.insert(*item_id) {
     // Circular reference detected
     return None;
   }
@@ -683,7 +682,7 @@ fn resolve_reexport_chain<'a>(
       }
     }
     // Not a re-export, return the item
-    Some((item_id.clone(), item))
+    Some((*item_id, item))
   } else {
     None
   }
@@ -698,6 +697,7 @@ fn get_visibility_indicator(item: &Item) -> &'static str {
 }
 
 /// Format a struct definition with links extracted
+#[allow(clippy::single_char_add_str, clippy::manual_flatten)]
 fn format_struct_definition_with_links(
   name: &str,
   s: &rustdoc_types::Struct,
@@ -741,8 +741,10 @@ fn format_struct_definition_with_links(
   match &s.kind {
     rustdoc_types::StructKind::Plain { fields, .. } => {
       if fields.is_empty() {
+        #[allow(clippy::single_char_add_str)]
         code.push_str(";");
       } else {
+        #[allow(clippy::single_char_add_str)]
         code.push_str(" {");
         for field_id in fields {
           if let Some(field) = crate_data.index.get(field_id) {
@@ -823,6 +825,7 @@ fn format_struct_definition_with_links(
 }
 
 /// Format an enum definition with links extracted
+#[allow(clippy::manual_flatten)]
 fn format_enum_definition_with_links(
   name: &str,
   e: &rustdoc_types::Enum,
@@ -927,6 +930,7 @@ fn format_enum_definition_with_links(
 }
 
 /// Format a function definition with links extracted
+#[allow(clippy::format_in_format_args)]
 fn format_function_definition_with_links(
   name: &str,
   f: &rustdoc_types::Function,
@@ -1001,6 +1005,7 @@ fn format_function_definition_with_links(
   (code, all_links)
 }
 
+#[allow(clippy::single_char_add_str)]
 fn format_item(
   item_id: &rustdoc_types::Id,
   item: &Item,
@@ -1512,6 +1517,7 @@ fn collect_impls_for_type<'a>(
   (inherent_impls, trait_impls)
 }
 
+#[allow(clippy::type_complexity)]
 fn format_impl_methods(
   impl_block: &rustdoc_types::Impl,
   crate_data: &Crate,
@@ -1542,6 +1548,7 @@ fn format_impl_methods(
   methods
 }
 
+#[allow(clippy::format_in_format_args)]
 fn format_function_signature_with_links(
   name: &str,
   f: &rustdoc_types::Function,
@@ -1634,7 +1641,7 @@ fn format_type_depth(ty: &rustdoc_types::Type, crate_data: &Crate, depth: usize)
   match ty {
     Type::ResolvedPath(path) => {
       let short_name = get_short_type_name(&path.path);
-      let link = Some(path.id.clone())
+      let link = Some(path.id)
         .as_ref()
         .and_then(|id| generate_type_link(&path.path, id, crate_data, None));
       let mut result = if let Some(link) = link {
@@ -1912,7 +1919,7 @@ fn sanitize_docs_for_mdx(docs: &str) -> String {
     // Check if this line starts with an HTML opening tag
     if trimmed.starts_with('<') && !trimmed.starts_with("</") {
       // Extract tag name (e.g., "details" from "<details>")
-      if let Some(tag_end) = trimmed.find(|c: char| c == '>' || c == ' ') {
+      if let Some(tag_end) = trimmed.find(|c: char| ['>', ' '].contains(&c)) {
         let tag_name = &trimmed[1..tag_end];
 
         // Only process block-level HTML tags
@@ -2019,6 +2026,7 @@ fn generate_type_link(
   generate_type_link_depth(full_path, item_id, crate_data, current_item, 0)
 }
 
+#[allow(clippy::bind_instead_of_map)]
 fn generate_type_link_depth(
   full_path: &str,
   item_id: &Id,
@@ -2445,7 +2453,7 @@ fn format_type_with_links_depth(
   let type_str = match ty {
     Type::ResolvedPath(path) => {
       let short_name = get_short_type_name(&path.path);
-      if let Some(link) = Some(path.id.clone())
+      if let Some(link) = Some(path.id)
         .as_ref()
         .and_then(|id| generate_type_link(&path.path, id, crate_data, current_item))
       {
@@ -2989,6 +2997,7 @@ fn generate_combined_crate_and_root_content(
   output
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_individual_pages(
   items: &[(Id, Item)],
   path_prefix: &str,
@@ -3076,6 +3085,7 @@ fn generate_individual_pages(
   }
 }
 
+#[allow(clippy::same_item_push)]
 fn generate_module_overview(
   module_name: &str,
   items: &[(Id, Item)],
@@ -3108,7 +3118,7 @@ fn generate_module_overview(
     crate_name.to_string()
   } else if module_name.contains("::") {
     // Sub-module uses parent's sidebar
-    module_name.rsplitn(2, "::").nth(1).unwrap().to_string()
+    module_name.rsplit_once("::").unwrap().0.to_string()
   } else {
     // Top-level module (crate_name::module) uses crate's sidebar
     crate_name.to_string()
@@ -3143,7 +3153,7 @@ fn generate_module_overview(
   output.push_str("import Link from '@docusaurus/Link';\n\n");
 
   // Breadcrumb with :: separator (rustdoc style)
-  let breadcrumb = module_name.replace("::", "::");
+  let breadcrumb = module_name;
   output.push_str(&format!("**{}**\n\n", breadcrumb));
 
   output.push_str(&format!("# Module {}\n\n", short_name));
@@ -3459,7 +3469,7 @@ fn generate_all_sidebars(
   // 1. With is_root=true (shows "Crates" section) - used by the crate's own page
   let root_sidebar_for_crate = generate_sidebar_for_module(
     crate_name,
-    &crate_name.to_string(),
+    crate_name,
     modules,
     crate_data,
     sidebar_prefix,
@@ -3479,7 +3489,7 @@ fn generate_all_sidebars(
   // 2. With is_root=false (shows crate's modules) - used by the crate's child modules
   let root_sidebar_for_modules = generate_sidebar_for_module(
     crate_name,
-    &crate_name.to_string(),
+    crate_name,
     modules,
     crate_data,
     sidebar_prefix,
@@ -3621,6 +3631,7 @@ fn generate_all_sidebars(
 }
 
 /// Generate sidebar for a specific module
+#[allow(clippy::too_many_arguments)]
 fn generate_sidebar_for_module(
   _crate_name: &str, // Prefixed with _ to avoid unused warning
   module_key: &str,
@@ -3769,7 +3780,7 @@ fn generate_sidebar_for_module(
     (Some(module_key), format!("In {}", _crate_name))
   } else if module_key.contains("::") {
     // For modules: has parent module - show siblings
-    let parent = module_key.rsplitn(2, "::").nth(1).unwrap();
+    let parent = module_key.rsplit_once("::").unwrap().0;
     eprintln!(
       "[DEBUG] Module sidebar for module_key: {}, parent: {}",
       module_key, parent
@@ -3841,7 +3852,7 @@ fn generate_sidebar_for_module(
 
     items_by_type
       .entry("Modules")
-      .or_insert_with(Vec::new)
+      .or_default()
       .push(SidebarItem::Doc {
         id: child_doc_id,
         label: Some(label),
@@ -3900,7 +3911,7 @@ fn generate_sidebar_for_module(
 
         items_by_type
           .entry(type_category)
-          .or_insert_with(Vec::new)
+          .or_default()
           .push(SidebarItem::Doc {
             id: item_doc_id,
             label: Some(item_name.clone()),

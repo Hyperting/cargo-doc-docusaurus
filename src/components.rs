@@ -197,7 +197,7 @@ pub fn list_components(docusaurus_path: Option<&Path>) -> Result<()> {
           "⚠️  Missing         "
         };
 
-        let filename = template.path.split('/').last().unwrap_or(template.path);
+        let filename = template.path.split('/').next_back().unwrap_or(template.path);
         let filename_padded = format!("{:<48}", filename);
 
         println!("│ {} │ {} │", filename_padded, status);
@@ -253,7 +253,7 @@ pub fn list_components(docusaurus_path: Option<&Path>) -> Result<()> {
           "Other              "
         };
 
-        let filename = template.path.split('/').last().unwrap_or(template.path);
+        let filename = template.path.split('/').next_back().unwrap_or(template.path);
         let filename_padded = format!("{:<48}", filename);
 
         println!("│ {} │ {} │", filename_padded, file_type);
