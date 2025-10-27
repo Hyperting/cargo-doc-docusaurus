@@ -42,3 +42,8 @@ rustdoc-types = { version = "0.56", features = ["rustc-hash"] }
 [dev-dependencies]
 insta = { version = "1.41", features = ["glob"] }
 tempfile = "3.13"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
