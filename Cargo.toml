@@ -16,13 +16,16 @@ homepage = "https://github.com/Hyperting/cargo-doc-docusaurus"
 keywords = ["cargo-subcommand", "docusaurus", "documentation", "rustdoc", "cargo"]
 categories = ["command-line-utilities", "development-tools"]
 rust-version = "1.85"
-include = [
-  "Cargo.toml",
-  "README.md",
+exclude = [
+  "/example-docs/**",
+  "/.github/**",
+  "/.vscode/**",
+  ".gitignore",
+  "ATTRIBUTION.md",
   "CHANGELOG.md",
-  "LICENSE-*",
-  "src/**",
-  "templates/**",
+  "regenerate-example.sh",
+  "Release.toml",
+  "SETUP.md"
 ]
 
 [[bin]]
