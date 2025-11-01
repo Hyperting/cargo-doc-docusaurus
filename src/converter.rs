@@ -3530,7 +3530,10 @@ fn generate_all_sidebars(
     };
     all_sidebars.insert(module_path.clone(), sidebar);
 
-    // Check if this module has sub-modules (direct children)
+    // Check if this module has sub-modules (direct children) or items
+    // We need to generate a _children sidebar if:
+    // 1. The module has submodules (for navigation between siblings)
+    // 2. The module has items (structs, enums, etc.) whose pages need this sidebar
     let has_submodules = modules.keys().any(|key| {
       if let Some(stripped) = key.strip_prefix(&format!("{}::", module_key)) {
         // Make sure it's a direct child (no more ::)
@@ -3540,10 +3543,14 @@ fn generate_all_sidebars(
       }
     });
 
-    // If this module has sub-modules, generate an additional sidebar for them
+    let has_items = items
+      .iter()
+      .any(|(_, item)| !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_)));
+
+    // If this module has sub-modules or items, generate an additional sidebar for them
     // This sidebar shows "In <module>" with the module's own contents
     // Similar to how leaf items get a sidebar showing their parent module's contents
-    if has_submodules {
+    if has_submodules || has_items {
       let submodule_sidebar = generate_sidebar_for_module(
         crate_name,
         module_key, // Use this module as the "parent"
