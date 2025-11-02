@@ -84,6 +84,19 @@ pub fn convert_to_markdown_multifile(
   let root_module_key = crate_name.to_string();
   let has_root_items = modules.contains_key(&root_module_key);
 
+  // First, ensure ALL modules (including empty ones) are in the modules map
+  // This is crucial for generating index.md files and sidebar entries for parent modules
+  // that only contain submodules (prevents Docusaurus referencing missing doc ids).
+  for (_id, item) in &crate_data.index {
+    if let ItemEnum::Module(_) = &item.inner {
+      if let Some(path) = item_paths.get(_id) {
+        let module_path = path.join("::");
+        // Ensure this module exists in the map (even if empty)
+        modules.entry(module_path).or_default();
+      }
+    }
+  }
+
   // Build module hierarchy to determine which modules have submodules
   let module_hierarchy = build_module_hierarchy(&modules, crate_name);
 
@@ -3514,8 +3527,11 @@ fn generate_all_sidebars(
   all_sidebars.insert(root_path_for_modules, root_sidebar_for_modules);
 
   // Generate sidebar for each submodule (for dynamic sidebar when entering modules)
+  eprintln!("[DEBUG] Total modules to process: {}", modules.keys().len());
   for module_key in modules.keys() {
+    eprintln!("[DEBUG] Processing module: {}", module_key);
     if module_key == crate_name {
+      eprintln!("[DEBUG] Skipping root crate: {}", crate_name);
       continue; // Skip root, already handled
     }
 
@@ -3552,6 +3568,8 @@ fn generate_all_sidebars(
       .get(module_key)
       .map(|items| items.iter().any(|(_, item)| !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_))))
       .unwrap_or(false);
+
+    eprintln!("[DEBUG] Module '{}' has_submodules_or_items: {}", module_key, has_submodules_or_items);
 
     // If this module has sub-modules or items, generate an additional sidebar for them
     if has_submodules_or_items {
