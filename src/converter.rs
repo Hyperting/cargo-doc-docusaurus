@@ -73,7 +73,7 @@ pub fn convert_to_markdown_multifile(
   let item_paths = build_path_map(crate_data);
 
   // Group items by module (no longer duplicating re-exports)
-  let modules = group_by_module(crate_data, &item_paths, include_private);
+  let mut modules = group_by_module(crate_data, &item_paths, include_private);
 
   // Build a map of re-exported modules (module_path -> list of re-exported submodule paths)
   let reexported_modules = build_reexported_modules(crate_data, &item_paths, include_private);
@@ -86,6 +86,16 @@ pub fn convert_to_markdown_multifile(
 
   // Build module hierarchy to determine which modules have submodules
   let module_hierarchy = build_module_hierarchy(&modules, crate_name);
+
+  // Ensure parent modules from hierarchy are present in `modules` so we
+  // generate index pages and matching sidebar keys for parent modules that
+  // only contain submodules (prevents Docusaurus referencing missing doc ids).
+  // This is a minimal change: it inserts empty item lists for parents that
+  // don't already exist so `generate_module_overview` will still create
+  // a corresponding `index.md` file.
+  for parent in module_hierarchy.keys() {
+    modules.entry(parent.clone()).or_default();
+  }
 
   // Generate index.md - either with crate overview or with root module content
   if has_root_items {
