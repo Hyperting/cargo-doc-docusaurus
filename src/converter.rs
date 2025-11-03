@@ -73,7 +73,7 @@ pub fn convert_to_markdown_multifile(
   let item_paths = build_path_map(crate_data);
 
   // Group items by module (no longer duplicating re-exports)
-  let modules = group_by_module(crate_data, &item_paths, include_private);
+  let mut modules = group_by_module(crate_data, &item_paths, include_private);
 
   // Build a map of re-exported modules (module_path -> list of re-exported submodule paths)
   let reexported_modules = build_reexported_modules(crate_data, &item_paths, include_private);
@@ -84,8 +84,31 @@ pub fn convert_to_markdown_multifile(
   let root_module_key = crate_name.to_string();
   let has_root_items = modules.contains_key(&root_module_key);
 
+  // First, ensure ALL modules (including empty ones) are in the modules map
+  // This is crucial for generating index.md files and sidebar entries for parent modules
+  // that only contain submodules (prevents Docusaurus referencing missing doc ids).
+  for (_id, item) in &crate_data.index {
+    if let ItemEnum::Module(_) = &item.inner {
+      if let Some(path) = item_paths.get(_id) {
+        let module_path = path.join("::");
+        // Ensure this module exists in the map (even if empty)
+        modules.entry(module_path).or_default();
+      }
+    }
+  }
+
   // Build module hierarchy to determine which modules have submodules
   let module_hierarchy = build_module_hierarchy(&modules, crate_name);
+
+  // Ensure parent modules from hierarchy are present in `modules` so we
+  // generate index pages and matching sidebar keys for parent modules that
+  // only contain submodules (prevents Docusaurus referencing missing doc ids).
+  // This is a minimal change: it inserts empty item lists for parents that
+  // don't already exist so `generate_module_overview` will still create
+  // a corresponding `index.md` file.
+  for parent in module_hierarchy.keys() {
+    modules.entry(parent.clone()).or_default();
+  }
 
   // Generate index.md - either with crate overview or with root module content
   if has_root_items {
@@ -3504,8 +3527,11 @@ fn generate_all_sidebars(
   all_sidebars.insert(root_path_for_modules, root_sidebar_for_modules);
 
   // Generate sidebar for each submodule (for dynamic sidebar when entering modules)
+  eprintln!("[DEBUG] Total modules to process: {}", modules.keys().len());
   for module_key in modules.keys() {
+    eprintln!("[DEBUG] Processing module: {}", module_key);
     if module_key == crate_name {
+      eprintln!("[DEBUG] Skipping root crate: {}", crate_name);
       continue; // Skip root, already handled
     }
 
@@ -3530,20 +3556,30 @@ fn generate_all_sidebars(
     };
     all_sidebars.insert(module_path.clone(), sidebar);
 
-    // Check if this module has sub-modules (direct children)
-    let has_submodules = modules.keys().any(|key| {
+    // Check if this module has sub-modules (direct children) or items
+    // Generate a _children sidebar if the module has submodules or items (structs, enums, etc.)
+    let has_submodules_or_items = modules.keys().any(|key| {
       if let Some(stripped) = key.strip_prefix(&format!("{}::", module_key)) {
-        // Make sure it's a direct child (no more ::)
         !stripped.contains("::")
       } else {
         false
       }
-    });
+    }) || modules
+      .get(module_key)
+      .map(|items| {
+        items
+          .iter()
+          .any(|(_, item)| !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_)))
+      })
+      .unwrap_or(false);
 
-    // If this module has sub-modules, generate an additional sidebar for them
-    // This sidebar shows "In <module>" with the module's own contents
-    // Similar to how leaf items get a sidebar showing their parent module's contents
-    if has_submodules {
+    eprintln!(
+      "[DEBUG] Module '{}' has_submodules_or_items: {}",
+      module_key, has_submodules_or_items
+    );
+
+    // If this module has sub-modules or items, generate an additional sidebar for them
+    if has_submodules_or_items {
       let submodule_sidebar = generate_sidebar_for_module(
         crate_name,
         module_key, // Use this module as the "parent"
