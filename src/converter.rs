@@ -3566,10 +3566,17 @@ fn generate_all_sidebars(
       }
     }) || modules
       .get(module_key)
-      .map(|items| items.iter().any(|(_, item)| !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_))))
+      .map(|items| {
+        items
+          .iter()
+          .any(|(_, item)| !matches!(&item.inner, ItemEnum::Module(_) | ItemEnum::Use(_)))
+      })
       .unwrap_or(false);
 
-    eprintln!("[DEBUG] Module '{}' has_submodules_or_items: {}", module_key, has_submodules_or_items);
+    eprintln!(
+      "[DEBUG] Module '{}' has_submodules_or_items: {}",
+      module_key, has_submodules_or_items
+    );
 
     // If this module has sub-modules or items, generate an additional sidebar for them
     if has_submodules_or_items {
